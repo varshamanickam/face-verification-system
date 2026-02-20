@@ -1,9 +1,9 @@
-import tensorflow_datasets as tfds
-import tensorflow as tf
-import numpy as np
 import json
 import os
 
+import numpy as np
+import tensorflow as tf
+import tensorflow_datasets as tfds
 
 # Load the LFW dataset and print its info
 ds, info = tfds.load(
@@ -44,7 +44,11 @@ manifest = {
     "split_policy": "none",  # we will split later
 }
 
-with open("manifest.json", "w") as f:
+output_path = os.path.join("outputs", "manifests", "lfw_manifest.json")
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+
+with open(output_path, "w") as f:
     json.dump(manifest, f, indent=2)
 
 print("Manifest written to manifest.json")
