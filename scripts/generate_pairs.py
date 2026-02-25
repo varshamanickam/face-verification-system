@@ -1,8 +1,7 @@
 import json
 import os
+
 import numpy as np
-
-
 
 lfw_data_dir = "data/lfw"
 
@@ -10,6 +9,7 @@ lfw_data_dir = "data/lfw"
 # and extracted to data_cache/downloads/extracted then copied to data/lfw. 
 if not os.path.exists(lfw_data_dir):
     import tensorflow_datasets as tfds
+
     # Load the LFW dataset and print its info
     ds, info = tfds.load(
         "lfw",
@@ -23,7 +23,7 @@ if not os.path.exists(lfw_data_dir):
     # it should look something like
     # data_cache/downloads/extracted/TAR_GZ.ndownloader.figshare.com_files_5976018BV99nGMtc3Dm-0r8dGjUD5cMNKgNTG9Q_-xj9ajVNsA/lfw
     extracted_data_dir = None
-    for root, dirs, files in os.walk("data_cache/downloads/extracted"):
+    for root, dirs, files in sorted(os.walk("data_cache/downloads/extracted")):
         for dir in dirs:
             if "TAR_GZ" in dir:
                 # try finding the lfw directory inside this dir
@@ -48,10 +48,10 @@ if not os.path.exists(lfw_data_dir):
 
 # create a list of (image_path, label) tuples
 data = []
-for label in os.listdir(lfw_data_dir):
+for label in sorted(os.listdir(lfw_data_dir)):
     label_dir = os.path.join(lfw_data_dir, label)
     if os.path.isdir(label_dir):
-        for img_file in os.listdir(label_dir):
+        for img_file in sorted(os.listdir(label_dir)):
             if img_file.endswith(".jpg"):
                 img_path = os.path.join(label_dir, img_file)
                 data.append((img_path, label))
