@@ -1,3 +1,4 @@
+# Ignore virtual environment 
 .venv/
 .faceidvenv/
 __pycache__/
@@ -5,3 +6,10 @@ __pycache__/
 *.ipynb_checkpoints
 .pytest_cache/
 *.egg-info/
+
+# Large outputs
+outputs/
+*.npy
+*.tfrecord
+data/
+data_cache/
