@@ -99,7 +99,7 @@ manifest = {
 output_path = os.path.join("outputs", "manifest.json") 
 os.makedirs(os.path.dirname(output_path), exist_ok=True) 
 with open(output_path, "w") as f: json.dump(manifest, f, indent=2) 
-print("Manifest written to manifest.json")
+print("Manifest written to outputs/manifest.json")
 
 
 def generate_pairs(id_map: dict, num_pairs: int, seed: int):
@@ -147,8 +147,13 @@ val_pairs = generate_pairs(val_id_map, num_pairs=2000, seed=random_seed)
 test_pairs = generate_pairs(test_id_map, num_pairs=2000, seed=random_seed)
 
 # save each split to a jsonl file with fields "left_path", "right_path", "label", "split"
+
 def save_pairs(pairs, split):
-    output_path = os.path.join("outputs", f"{split}.jsonl")
+    pairs_dir = os.path.join("outputs", "pairs")
+    os.makedirs(pairs_dir, exist_ok=True)
+
+    output_path = os.path.join(pairs_dir, f"{split}.jsonl")
+
     with open(output_path, "w") as f:
         for img1, img2, label in pairs:
             json_line = json.dumps({
@@ -158,6 +163,7 @@ def save_pairs(pairs, split):
                 "split": split
             })
             f.write(json_line + "\n")
+
     print(f"Saved {len(pairs)} pairs to {output_path}")
 
 save_pairs(train_pairs, "train")
