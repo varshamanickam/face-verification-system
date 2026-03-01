@@ -1,3 +1,5 @@
+import json
+import os
 import time
 
 import numpy as np
@@ -31,6 +33,16 @@ def benchmark_call(func, *args, repeats: int=3):
     
     return best_time, best_result
 
+# Writing benchmark results to outputs/bench/ 
+def write_benchmark_result(payload: dict, filename: str = "similarity_benchmark.json"):
+    bench_dir = os.path.join("outputs", "bench")
+    os.makedirs(bench_dir, exist_ok=True)
+    out_path = os.path.join(bench_dir, filename)
+    with open(out_path, "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Wrote benchmark results to {out_path}")
+
+
 def run_one_case(num_pairs: int, dim: int, seed: int=42):
     rng = np.random.default_rng(seed)
     A = rng.normal(size=(num_pairs, dim))
@@ -50,6 +62,31 @@ def run_one_case(num_pairs: int, dim: int, seed: int=42):
 
     e_max_diff = float(np.max(np.abs(e_loop - e_vec)))
     c_max_diff = float(np.max(np.abs(c_loop - c_vec)))
+
+    results = {
+        "num_pairs": int(num_pairs),
+        "dim": int(dim),
+        "seed": int(seed),
+        "repeats": 3,
+        "tolerances": {"atol": ATOL, "rtol": RTOL},
+        "euclidean": {
+            "loop_time_s": float(e_loop_time),
+            "vector_time_s": float(e_vec_time),
+            "speedup_x": float(e_loop_time / e_vec_time) if e_vec_time > 0 else None,
+            "allclose": bool(e_check),
+            "max_abs_diff": float(e_max_diff),
+        },
+        "cosine": {
+            "loop_time_s": float(c_loop_time),
+            "vector_time_s": float(c_vec_time),
+            "speedup_x": float(c_loop_time / c_vec_time) if c_vec_time > 0 else None,
+            "allclose": bool(c_check),
+            "max_abs_diff": float(c_max_diff),
+        },
+    }
+
+    #need to use uniqeu filename per case so runs don't overwrite each other
+    write_benchmark_result(results, filename=f"similarity_benchmark_np{num_pairs}_d{dim}.json")
 
     print(f"\nTest case: num_pairs={num_pairs:,}, dims={dim}")
     print(f"Euclidean    loop = {e_loop_time:.4f}s vector={e_vec_time:.4f}s   speedup={e_loop_time/e_vec_time:.2f}x   max_diff = {e_max_diff:.3e}  euclidean_matches={e_check}")
