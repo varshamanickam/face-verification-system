@@ -83,7 +83,13 @@ random_seed = 42
 # Create a manifest json
 manifest = {
     "seed": random_seed,
-    "split_policy": "sort and split by identity, with 80/10/10 split for train/val/test",
+    "split_policy": {
+        "split_basis": "identity level",
+        "split_ratios":{"train": 0.8, "val": 0.1, "test": 0.1 },
+        "method": "alphabetical sort and then slice",
+        "description": "Dataset is split by identity (person) and not by image. This ensures that no identity appears in more than one split."
+
+    },
     "counts": {
         "train_identities": len(train_labels),
         "val_identities": len(val_labels),
