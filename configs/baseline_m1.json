@@ -1,0 +1,20 @@
+{
+  "baseline_id": "baseline_m1_v1",
+  "description": "Milestone 1 deterministic face verification baseline",
+  "pairs_dir": "outputs/pairs",
+  "split_for_threshold_selection": "val",
+  "split_for_final_reporting": "test",
+  "score_metric": "cosine_similarity",
+  "score_direction": "higher_is_more_likely_same_person",
+  "embedding_backend": "simple_flatten",
+  "seed": 42,
+  "simple_embedding": {
+    "image_mode": "L",
+    "resize": [
+      32,
+      32
+    ],
+    "normalize": "l2",
+    "expected_embedding_dim": 1024
+  }
+}
