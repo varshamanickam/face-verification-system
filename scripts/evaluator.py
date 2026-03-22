@@ -126,13 +126,17 @@ def compute_split_metrics(scores: np.ndarray, labels: np.ndarray, threshold: flo
     fp = int(np.sum((predictions == 1) & (labels == 0)))
     fn = int(np.sum((predictions == 0) & (labels == 1)))
 
+    tpr = float(tp / (tp + fn)) if (tp + fn) > 0 else 0.0
+    tnr = float(tn / (tn + fp)) if (tn + fp) > 0 else 0.0
+    balanced_accuracy = float((tpr + tnr) / 2.0)
     precision = float(tp / (tp + fp)) if (tp + fp) > 0 else 0.0
-    recall = float(tp / (tp + fn)) if (tp + fn) > 0 else 0.0
+    recall = tpr
     f1 = float((2.0 * precision * recall) / (precision + recall)) if (precision + recall) > 0 else 0.0
 
     return {
         "num_pairs": int(labels.size),
         "accuracy": acc,
+        "balanced_accuracy": balanced_accuracy,
         "precision": precision,
         "recall": recall,
         "f1": f1,
@@ -171,6 +175,7 @@ def threshold_sweep(
                     {
                         "threshold": float(threshold),
                         "accuracy": acc,
+                        "balanced_accuracy": float(metrics["balanced_accuracy"]),
                         "precision": float(metrics["precision"]),
                         "recall": float(metrics["recall"]),
                         "f1": f1,
@@ -284,7 +289,14 @@ def run(config_path: Path) -> None:
     print(f"Selected threshold: {threshold:.6f}")
     print(f"Validation F1 @ threshold: {val_metrics['f1']:.4f}")
     print(f"Validation accuracy @ threshold: {val_metrics['accuracy']:.4f}")
+    print(f"Validation balanced accuracy @ threshold: {val_metrics['balanced_accuracy']:.4f}")
+    print(f"Validation precision @ threshold: {val_metrics['precision']:.4f}")
+    print(f"Validation recall @ threshold: {val_metrics['recall']:.4f}")
     print(f"Test accuracy @ threshold: {test_metrics['accuracy']:.4f}")
+    print(f"Test balanced accuracy @ threshold: {test_metrics['balanced_accuracy']:.4f}")
+    print(f"Test precision @ threshold: {test_metrics['precision']:.4f}")
+    print(f"Test recall @ threshold: {test_metrics['recall']:.4f}")
+    print(f"Test F1 @ threshold: {test_metrics['f1']:.4f}")
     print(f"Wrote summary to {summary_path}")
 
 
