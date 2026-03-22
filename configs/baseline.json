@@ -1,6 +1,6 @@
 {
-  "baseline_id": "baseline_m1_v1",
-  "description": "Milestone 1 deterministic face verification baseline",
+  "run_name": "run1",
+  "description": "Milestone 2 deterministic face verification baseline",
   "pairs_dir": "outputs/pairs",
   "split_for_threshold_selection": "val",
   "split_for_final_reporting": "test",

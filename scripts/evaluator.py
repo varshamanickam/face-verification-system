@@ -1,6 +1,8 @@
 import argparse
+from datetime import datetime, timezone
 import json
 from pathlib import Path
+import subprocess
 
 import numpy as np
 from PIL import Image
@@ -10,8 +12,38 @@ from src.similarity_metrics import cosine_similarity_vector, euclidean_distance_
 EPSILON = 1e-12
 
 
+def get_git_commit_info() -> dict:
+    try:
+        full_hash = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        short_hash = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        return {
+            "git_commit": full_hash,
+            "git_commit_short": short_hash,
+        }
+    except Exception:
+        return {
+            "git_commit": None,
+            "git_commit_short": None,
+        }
+
+
 def load_config(config_path: Path) -> dict:
     with config_path.open("r") as file:
+        return json.load(file)
+
+
+def load_manifest(manifest_path: Path) -> dict | None:
+    if not manifest_path.exists():
+        return None
+    with manifest_path.open("r") as file:
         return json.load(file)
 
 
@@ -211,7 +243,11 @@ def write_jsonl_scores(output_path: Path, pairs: list[dict], scores: np.ndarray)
 
 def run(config_path: Path) -> None:
     cfg = load_config(config_path)
-    baseline_id = cfg["baseline_id"]
+    run_name = cfg.get("run_name")
+    run_identifier = run_name if run_name else config_path.stem
+    output_stem = run_identifier
+    output_dir_name = output_stem
+    config_setting_name = cfg.get("config_setting_name", config_path.stem)
     pairs_dir = Path(cfg["pairs_dir"])
     val_split = cfg["split_for_threshold_selection"]
     test_split = cfg["split_for_final_reporting"]
@@ -238,10 +274,12 @@ def run(config_path: Path) -> None:
         simple_cfg,
     )
 
-    output_dir = Path("outputs") / "baseline"
+    output_dir = Path("outputs") / output_dir_name
     output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = Path("outputs") / "manifest.json"
+    manifest = load_manifest(manifest_path)
 
-    sweep_path = output_dir / f"{baseline_id}_{val_split}_threshold_sweep.jsonl"
+    sweep_path = output_dir / f"{output_stem}_{val_split}_threshold_sweep.jsonl"
     threshold, val_f1, sweep_count = threshold_sweep(
         sweep_path,
         val_scores,
@@ -252,33 +290,63 @@ def run(config_path: Path) -> None:
     test_metrics = compute_split_metrics(test_scores, test_labels, threshold, score_direction)
 
 
-    write_jsonl_scores(output_dir / f"{baseline_id}_{val_split}_scores.jsonl", val_pairs, val_scores)
-    write_jsonl_scores(output_dir / f"{baseline_id}_{test_split}_scores.jsonl", test_pairs, test_scores)
+    write_jsonl_scores(output_dir / f"{output_stem}_{val_split}_scores.jsonl", val_pairs, val_scores)
+    write_jsonl_scores(output_dir / f"{output_stem}_{test_split}_scores.jsonl", test_pairs, test_scores)
 
-    summary = {
-        "baseline_id": baseline_id,
-        "config_path": str(config_path),
-        "seed": int(cfg["seed"]),
+    commit_info = get_git_commit_info()
+    evaluated_at_utc = datetime.now(timezone.utc).isoformat()
+
+    data_or_pair_version = {
         "pairs_dir": str(pairs_dir),
-        "split_for_threshold_selection": val_split,
-        "split_for_final_reporting": test_split,
-        "score_metric": score_metric,
-        "score_direction": score_direction,
-        "embedding_backend": embedding_backend,
-        "validation_threshold_sweep_path": str(sweep_path),
-        "validation_threshold_candidates": int(sweep_count),
-        "threshold_selection_metric": "f1",
-        "selected_threshold": float(threshold),
-        "threshold_selection_f1": float(val_f1),
-        "validation_metrics": val_metrics,
-        "test_metrics": test_metrics,
+        "manifest_path": str(manifest_path) if manifest is not None else None,
+        "manifest_seed": int(manifest["seed"]) if manifest and "seed" in manifest else None,
+        "split_policy": manifest.get("split_policy") if manifest else None,
+        "description": cfg.get(
+            "data_or_pair_version",
+            "Evaluation used the pair files in pairs_dir and the current manifest when available.",
+        ),
     }
 
-    summary_path = output_dir / f"{baseline_id}_summary.json"
+    summary = {
+        "run_identifier": run_identifier,
+        "timestamp_utc": evaluated_at_utc,
+        "tracking": {
+            "output_dir": str(output_dir),
+            "git_commit": commit_info["git_commit"],
+            "git_commit_short": commit_info["git_commit_short"],
+        },
+        "config_or_run_setting_name": {
+            "name": config_setting_name,
+            "config_path": str(config_path),
+            "embedding_backend": embedding_backend,
+            "score_metric": score_metric,
+            "score_direction": score_direction,
+            "split_for_threshold_selection": val_split,
+            "split_for_final_reporting": test_split,
+            "seed": int(cfg["seed"]),
+        },
+        "data_or_pair_version": data_or_pair_version,
+        "threshold_information": {
+            "selection_metric": "f1",
+            "validation_threshold_sweep_path": str(sweep_path),
+            "validation_threshold_candidates": int(sweep_count),
+            "selected_threshold": float(threshold),
+            "selected_threshold_validation_f1": float(val_f1),
+        },
+        "metrics": {
+            "validation": val_metrics,
+            "test": test_metrics,
+        },
+        
+    }
+
+    summary_path = output_dir / f"{output_stem}_summary.json"
     with summary_path.open("w") as file:
         json.dump(summary, file, indent=2)
 
-    print(f"Baseline ID: {baseline_id}")
+    print(f"Run identifier: {run_identifier}")
+    print(f"Timestamp (UTC): {evaluated_at_utc}")
+    print(f"Config setting name: {config_setting_name}")
     print(f"Threshold split: {val_split}")
     print(f"Reporting split: {test_split}")
     print(f"Score metric: {score_metric}")
@@ -305,7 +373,7 @@ def main() -> None:
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path("configs/baseline_m1.json"),
+        default=Path("configs/baseline.json"),
         help="Path to baseline config JSON",
     )
     args = parser.parse_args()
