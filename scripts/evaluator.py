@@ -5,11 +5,9 @@ from pathlib import Path
 import subprocess
 
 import numpy as np
-from PIL import Image
 
+from src.learned_projection import load_projection_model, preprocess_image, project_vectors
 from src.similarity_metrics import cosine_similarity_vector, euclidean_distance_vector
-
-EPSILON = 1e-12
 
 
 def get_git_commit_info() -> dict:
@@ -62,51 +60,46 @@ def read_pairs(split_path: Path, expected_split: str) -> list[dict]:
     return pairs
 
 
-def simple_image_embedding(image_path: Path, simple_cfg: dict) -> np.ndarray:
-    mode = simple_cfg.get("image_mode", "L")
-    resize_h, resize_w = simple_cfg.get("resize", [32, 32])
-    with Image.open(image_path) as image:
-        image = image.convert(mode)
-        image = image.resize((resize_w, resize_h), Image.Resampling.BILINEAR)
-        array = np.asarray(image, dtype=np.float64) / 255.0
+def learned_projection_embedding(image_path: Path, learned_cfg: dict, model: dict) -> np.ndarray:
+    image_mode = learned_cfg.get("image_mode", model["image_mode"])
+    resize = learned_cfg.get("resize", model["resize"])
+    vector = preprocess_image(image_path, image_mode, resize)
+    input_dim = int(model["input_dim"])
+    if vector.shape[0] != input_dim:
+        raise ValueError(f"Projection input dim mismatch: got {vector.shape[0]}, expected {input_dim}")
 
-    vector = array.reshape(-1)
-
-    if simple_cfg.get("normalize") == "l2":
-        norm = float(np.linalg.norm(vector))
-        vector = vector / (norm + EPSILON)
-
-    expected_dim = simple_cfg.get("expected_embedding_dim")
-    if expected_dim is not None and vector.shape[0] != int(expected_dim):
-        raise ValueError(f"Simple embedding dim mismatch: got {vector.shape[0]}, expected {expected_dim}")
-
-    return vector
+    embedding = project_vectors(
+        vector[np.newaxis, :],
+        model["weights"],
+        model["bias"],
+        learned_cfg.get("normalize_output", model["normalize_output"]),
+    )[0]
+    expected_dim = learned_cfg.get("expected_embedding_dim", model["embedding_dim"])
+    if embedding.shape[0] != int(expected_dim):
+        raise ValueError(f"Projection embedding dim mismatch: got {embedding.shape[0]}, expected {expected_dim}")
+    return embedding
 
 
 def score_pairs(
     pairs: list[dict],
     metric: str,
-    simple_cfg: dict,
+    embedding_cfg: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
     embedding_cache: dict[str, np.ndarray] = {}
     left_vectors = []
     right_vectors = []
     labels = []
+    model_path = Path(embedding_cfg["model_path"])
+    model = load_projection_model(model_path)
 
     for pair in pairs:
         left_path = pair["left_path"]
         right_path = pair["right_path"]
 
         if left_path not in embedding_cache:
-            embedding_cache[left_path] = simple_image_embedding(
-                Path(left_path),
-                simple_cfg,
-            )
+            embedding_cache[left_path] = learned_projection_embedding(Path(left_path), embedding_cfg, model)
         if right_path not in embedding_cache:
-            embedding_cache[right_path] = simple_image_embedding(
-                Path(right_path),
-                simple_cfg,
-            )
+            embedding_cache[right_path] = learned_projection_embedding(Path(right_path), embedding_cfg, model)
 
         left_vectors.append(embedding_cache[left_path])
         right_vectors.append(embedding_cache[right_path])
@@ -253,12 +246,10 @@ def run(config_path: Path) -> None:
     test_split = cfg["split_for_final_reporting"]
     score_metric = cfg["score_metric"]
     score_direction = cfg["score_direction"]
-    embedding_backend = cfg.get("embedding_backend", "simple_flatten")
-    if embedding_backend != "simple_flatten":
-        raise ValueError(
-            "This script is configured for simple flatten embeddings. Set embedding_backend='simple_flatten'."
-        )
-    simple_cfg = cfg.get("simple_embedding", {})
+    embedding_backend = "learned_projection"
+    embedding_cfg = cfg.get("learned_projection", {})
+    if "model_path" not in embedding_cfg:
+        raise ValueError("learned_projection.model_path must be set in the evaluator config")
 
     val_pairs = read_pairs(pairs_dir / f"{val_split}.jsonl", expected_split=val_split)
     test_pairs = read_pairs(pairs_dir / f"{test_split}.jsonl", expected_split=test_split)
@@ -266,12 +257,12 @@ def run(config_path: Path) -> None:
     val_scores, val_labels = score_pairs(
         val_pairs,
         score_metric,
-        simple_cfg,
+        embedding_cfg,
     )
     test_scores, test_labels = score_pairs(
         test_pairs,
         score_metric,
-        simple_cfg,
+        embedding_cfg,
     )
 
     output_dir = Path("outputs") / output_dir_name

@@ -1,0 +1,29 @@
+{
+  "run_name": "run2",
+  "description": "Learned resize-flatten-projection embedding",
+  "config_setting_name": "learned_projection_32x32_gray_128d",
+  "pairs_dir": "outputs/pairs",
+  "split_for_threshold_selection": "val",
+  "split_for_final_reporting": "test",
+  "score_metric": "cosine_similarity",
+  "score_direction": "higher_is_more_likely_same_person",
+  "embedding_backend": "learned_projection",
+  "seed": 42,
+  "learned_projection": {
+    "model_path": "outputs/models/run2_projection.npz",
+    "image_mode": "L",
+    "resize": [
+      32,
+      32
+    ],
+    "embedding_dim": 128,
+    "expected_embedding_dim": 128,
+    "normalize_output": "l2",
+    "train": {
+      "learning_rate": 0.001,
+      "epochs": 12,
+      "batch_size": 128,
+      "weight_decay": 0.0001
+    }
+  }
+}
