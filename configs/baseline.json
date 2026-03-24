@@ -1,0 +1,13 @@
+{
+  "run_name": "baseline",
+  "description": "Simple non-learnable embedding baseline.",
+  "pairs_dir": "outputs/pairs",
+  "split_for_threshold_selection": "val",
+  "split_for_final_reporting": "test",
+  "image_mode": "L",
+  "resize": [
+    32,
+    32
+  ],
+  "fixed_threshold": 0.9
+}
