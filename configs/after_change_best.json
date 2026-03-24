@@ -1,0 +1,14 @@
+{
+  "run_name": "after_change_best",
+  "description": "Simple non-learnable embedding baseline on pairs_v2 using the best threshold selected on validation.",
+  "pairs_dir": "outputs/pairs_v2",
+  "split_for_threshold_selection": "val",
+  "split_for_final_reporting": "test",
+  "short_note_on_what_changed": "Best-threshold run after data centric change of removing self-pairs and capping identity over-representation. Uses the threshold selected on validation and applies it to test.",
+  "image_mode": "L",
+  "resize": [
+    32,
+    32
+  ],
+  "fixed_threshold": 0.5853091582168102 
+}
