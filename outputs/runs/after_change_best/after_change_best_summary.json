@@ -1,0 +1,36 @@
+{
+  "run_identifier": "after_change_best",
+  "commit_hash": "4ed9a517545916de327ed98a69fdd646fc687e2e",
+  "config_path": "configs/after_change_best.json",
+  "pairs_dir": "outputs/pairs_v2",
+  "threshold_information": {
+    "selection_strategy": "fixed_threshold",
+    "score_metric": "cosine_similarity",
+    "threshold": 0.5853091582168102
+  },
+  "metrics": {
+    "val": {
+      "tp": 977,
+      "tn": 76,
+      "fp": 924,
+      "fn": 23,
+      "accuracy": 0.5265,
+      "balanced_accuracy": 0.5265,
+      "precision": 0.5139400315623356,
+      "recall": 0.977,
+      "f1": 0.6735608410892796
+    },
+    "test": {
+      "tp": 938,
+      "tn": 47,
+      "fp": 953,
+      "fn": 62,
+      "accuracy": 0.4925,
+      "balanced_accuracy": 0.4925,
+      "precision": 0.49603384452670546,
+      "recall": 0.938,
+      "f1": 0.648910411622276
+    }
+  },
+  "short_note_on_what_changed": "Best-threshold run after data centric change of removing self-pairs and capping identity over-representation. Uses the threshold selected on validation and applies it to test."
+}

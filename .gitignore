@@ -8,7 +8,9 @@ __pycache__/
 *.egg-info/
 
 # Large outputs
-outputs/
+outputs/bench/
+outputs/pairs/
+outputs/pairs_v2/
 *.npy
 *.tfrecord
 data/
