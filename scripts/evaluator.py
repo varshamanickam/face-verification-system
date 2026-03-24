@@ -11,24 +11,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.similarity_metrics import cosine_similarity_vector
-
-
-def load_config(config_path: str | Path) -> dict:
-    config_path = Path(config_path)
-    with config_path.open("r") as file:
-        return json.load(file)
-
-
-def read_pairs(path: str | Path, expected_split: str | None = None) -> list[dict]:
-    path = Path(path)
-    pairs = []
-    with path.open("r") as file:
-        for line in file:
-            item = json.loads(line)
-            if expected_split is not None and item["split"] != expected_split:
-                raise ValueError(f"Expected split={expected_split}, got {item['split']} in {path}")
-            pairs.append(item)
-    return pairs
+from src.validation import (load_config, read_pairs, validate_config,
+                            validate_metrics, validate_split_disjointness,
+                            validate_threshold)
 
 
 def preprocess_image(image_path: str | Path, image_mode: str, resize: tuple[int, int]) -> np.ndarray:
@@ -86,7 +71,7 @@ def compute_metrics(labels: np.ndarray, predictions: np.ndarray) -> dict:
     else:
         f1 = 2.0 * precision * recall / (precision + recall)
 
-    return {
+    metrics = {
         "tp": tp,
         "tn": tn,
         "fp": fp,
@@ -97,6 +82,8 @@ def compute_metrics(labels: np.ndarray, predictions: np.ndarray) -> dict:
         "recall": float(recall),
         "f1": float(f1),
     }
+    validate_metrics(metrics)
+    return metrics
 
 
 def get_git_commit_hash() -> str | None:
@@ -123,6 +110,12 @@ def score_split(
     left_inputs, right_inputs, labels = pairs_to_arrays(pairs, image_cache)
 
     scores = cosine_similarity_vector(left_inputs, right_inputs)
+    if scores.shape[0] != len(pairs):
+        raise ValueError(
+            f"Score count {scores.shape[0]} does not match pair count {len(pairs)} for split={split}"
+        )
+    if not np.all(np.isfinite(scores)):
+        raise ValueError(f"Non-finite scores found for split={split}")
 
     score_rows = []
     for pair, score in zip(pairs, scores.tolist()):
@@ -139,6 +132,7 @@ def score_split(
 
 
 def evaluate_scored_split(labels: np.ndarray, scores: np.ndarray, threshold: float) -> dict:
+    validate_threshold(threshold)
     predictions = (scores >= threshold).astype(np.int64)
     return compute_metrics(labels=labels, predictions=predictions)
 
@@ -183,6 +177,7 @@ def threshold_sweep(labels: np.ndarray, scores: np.ndarray) -> tuple[float, dict
             best_threshold = float(threshold)
             best_metrics = metrics
 
+    validate_threshold(float(best_threshold))
     return float(best_threshold), best_metrics, sweep_rows
 
 
@@ -238,6 +233,7 @@ def main() -> None:
     args = parser.parse_args()
 
     cfg = load_config(args.config)
+    validate_config(cfg, args.config)
     run_name = cfg.get("run_name", Path(args.config).stem)
     pairs_dir = Path(cfg.get("pairs_dir", "outputs/pairs"))
     image_mode = cfg.get("image_mode", "L")
@@ -262,6 +258,7 @@ def main() -> None:
         test_labels, test_score_values, test_scores = score_split(
             split=test_split, pairs_dir=pairs_dir, image_mode=image_mode, resize=resize
         )
+        validate_split_disjointness(val_scores, test_scores)
         save_jsonl(output_dir / f"{run_name}_{val_split}_threshold_sweep.jsonl", sweep_rows)
         save_jsonl(output_dir / f"{run_name}_{test_split}_scores.jsonl", test_scores)
         save_roc_style_plot(output_dir / f"{run_name}_{val_split}_roc.png", sweep_rows)
@@ -284,6 +281,7 @@ def main() -> None:
         test_labels, test_score_values, test_scores = score_split(
             split=test_split, pairs_dir=pairs_dir, image_mode=image_mode, resize=resize
         )
+        validate_split_disjointness(val_scores, test_scores)
         save_jsonl(output_dir / f"{run_name}_{test_split}_scores.jsonl", test_scores)
         val_metrics = evaluate_scored_split(labels=val_labels, scores=val_score_values, threshold=threshold)
         test_metrics = evaluate_scored_split(labels=test_labels, scores=test_score_values, threshold=threshold)
