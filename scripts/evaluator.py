@@ -3,8 +3,12 @@ import json
 from pathlib import Path
 import subprocess
 
+import matplotlib
 import numpy as np
 from PIL import Image
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 from src.similarity_metrics import cosine_similarity_vector
 
@@ -108,34 +112,78 @@ def get_git_commit_hash() -> str | None:
     return result.stdout.strip()
 
 
-def evaluate_split(
+def score_split(
     split: str,
     pairs_dir: Path,
     image_mode: str,
     resize: tuple[int, int],
-    threshold: float,
-) -> tuple[dict, list[dict]]:
+) -> tuple[np.ndarray, np.ndarray, list[dict]]:
     pairs = read_pairs(pairs_dir / f"{split}.jsonl", expected_split=split)
     image_cache = build_image_cache(pairs, image_mode=image_mode, resize=resize)
     left_inputs, right_inputs, labels = pairs_to_arrays(pairs, image_cache)
 
     scores = cosine_similarity_vector(left_inputs, right_inputs)
-    predictions = (scores >= threshold).astype(np.int64)
-    metrics = compute_metrics(labels=labels, predictions=predictions)
 
     score_rows = []
-    for pair, score, prediction in zip(pairs, scores.tolist(), predictions.tolist()):
+    for pair, score in zip(pairs, scores.tolist()):
         score_rows.append(
             {
                 "left_path": pair["left_path"],
                 "right_path": pair["right_path"],
                 "label": int(pair["label"]),
                 "score": float(score),
-                "prediction": int(prediction),
                 "split": split,
             }
         )
-    return metrics, score_rows
+    return labels, scores, score_rows
+
+
+def evaluate_scored_split(labels: np.ndarray, scores: np.ndarray, threshold: float) -> dict:
+    predictions = (scores >= threshold).astype(np.int64)
+    return compute_metrics(labels=labels, predictions=predictions)
+
+
+def threshold_candidates(scores: np.ndarray) -> np.ndarray:
+    unique_scores = np.unique(scores)
+    if unique_scores.size == 1:
+        score = float(unique_scores[0])
+        return np.asarray([score - 1e-6, score, score + 1e-6], dtype=np.float64)
+
+    midpoints = (unique_scores[:-1] + unique_scores[1:]) / 2.0
+    candidates = np.concatenate(
+        [
+            np.asarray([unique_scores[0] - 1e-6], dtype=np.float64),
+            unique_scores,
+            midpoints,
+            np.asarray([unique_scores[-1] + 1e-6], dtype=np.float64),
+        ]
+    )
+    return np.unique(candidates)
+
+
+def threshold_sweep(labels: np.ndarray, scores: np.ndarray) -> tuple[float, dict, list[dict]]:
+    best_threshold = None
+    best_metrics = None
+    sweep_rows = []
+
+    for threshold in threshold_candidates(scores):
+        metrics = evaluate_scored_split(labels=labels, scores=scores, threshold=float(threshold))
+        row = {"threshold": float(threshold), **metrics}
+        sweep_rows.append(row)
+
+        if best_metrics is None:
+            best_threshold = float(threshold)
+            best_metrics = metrics
+            continue
+
+        if metrics["f1"] > best_metrics["f1"]:
+            best_threshold = float(threshold)
+            best_metrics = metrics
+        elif metrics["f1"] == best_metrics["f1"] and metrics["accuracy"] > best_metrics["accuracy"]:
+            best_threshold = float(threshold)
+            best_metrics = metrics
+
+    return float(best_threshold), best_metrics, sweep_rows
 
 
 def save_jsonl(path: Path, rows: list[dict]) -> None:
@@ -143,6 +191,41 @@ def save_jsonl(path: Path, rows: list[dict]) -> None:
     with path.open("w") as file:
         for row in rows:
             file.write(json.dumps(row) + "\n")
+
+
+def save_roc_style_plot(path: Path, sweep_rows: list[dict]) -> None:
+    roc_points = []
+    seen = set()
+    for row in sweep_rows:
+        fp = row["fp"]
+        tn = row["tn"]
+        tp = row["tp"]
+        fn = row["fn"]
+        fpr = fp / max(fp + tn, 1)
+        tpr = tp / max(tp + fn, 1)
+        key = (round(fpr, 12), round(tpr, 12))
+        if key not in seen:
+            seen.add(key)
+            roc_points.append((fpr, tpr))
+
+    roc_points.sort()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fprs = [point[0] for point in roc_points]
+    tprs = [point[1] for point in roc_points]
+
+    fig, ax = plt.subplots(figsize=(6.4, 6.4), dpi=100)
+    ax.plot([0.0, 1.0], [0.0, 1.0], linestyle="--", color="gray", linewidth=1.5, label="Random")
+    ax.plot(fprs, tprs, color="#2463eb", linewidth=2.5, marker="o", markersize=3, label="Sweep ROC")
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
+    ax.set_title("Validation ROC-Style Curve")
+    ax.grid(True, linestyle=":", linewidth=0.8, alpha=0.7)
+    ax.legend(loc="lower right")
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
 
 
 def main() -> None:
@@ -159,47 +242,75 @@ def main() -> None:
     pairs_dir = Path(cfg.get("pairs_dir", "outputs/pairs"))
     image_mode = cfg.get("image_mode", "L")
     resize = tuple(int(value) for value in cfg.get("resize", [32, 32]))
-    threshold = float(cfg.get("fixed_threshold", 0.9))
+    selection_strategy = cfg.get("selection_strategy", "fixed_threshold")
     val_split = cfg.get("split_for_threshold_selection", "val")
-    test_split = cfg.get("split_for_final_reporting", "test")
-
-    val_metrics, val_scores = evaluate_split(
-        split=val_split,
-        pairs_dir=pairs_dir,
-        image_mode=image_mode,
-        resize=resize,
-        threshold=threshold,
-    )
-    test_metrics, test_scores = evaluate_split(
-        split=test_split,
-        pairs_dir=pairs_dir,
-        image_mode=image_mode,
-        resize=resize,
-        threshold=threshold,
+    val_labels, val_score_values, val_scores = score_split(
+        split=val_split, pairs_dir=pairs_dir, image_mode=image_mode, resize=resize
     )
 
     output_dir = Path("outputs") / "runs" / run_name
     output_dir.mkdir(parents=True, exist_ok=True)
     save_jsonl(output_dir / f"{run_name}_{val_split}_scores.jsonl", val_scores)
-    save_jsonl(output_dir / f"{run_name}_{test_split}_scores.jsonl", test_scores)
+
+    if selection_strategy == "threshold_sweep":
+        best_threshold, val_metrics, sweep_rows = threshold_sweep(
+            labels=val_labels,
+            scores=val_score_values,
+        )
+        test_split = cfg.get("split_for_final_reporting", "test")
+        test_labels, test_score_values, test_scores = score_split(
+            split=test_split, pairs_dir=pairs_dir, image_mode=image_mode, resize=resize
+        )
+        save_jsonl(output_dir / f"{run_name}_{val_split}_threshold_sweep.jsonl", sweep_rows)
+        save_jsonl(output_dir / f"{run_name}_{test_split}_scores.jsonl", test_scores)
+        save_roc_style_plot(output_dir / f"{run_name}_{val_split}_roc.png", sweep_rows)
+        test_metrics = evaluate_scored_split(labels=test_labels, scores=test_score_values, threshold=best_threshold)
+        threshold_information = {
+            "selection_strategy": "threshold_sweep",
+            "selection_split": val_split,
+            "selection_metric": "f1",
+            "score_metric": "cosine_similarity",
+            "best_threshold": best_threshold,
+            "num_candidates": len(sweep_rows),
+        }
+        metrics = {
+            val_split: val_metrics,
+            test_split: test_metrics,
+        }
+        short_note = (
+            "Threshold sweep for the simple non-learnable baseline. "
+            "Best threshold selected on validation by F1 and then applied to test."
+        )
+    else:
+        threshold = float(cfg.get("fixed_threshold", 0.9))
+        test_split = cfg.get("split_for_final_reporting", "test")
+        test_labels, test_score_values, test_scores = score_split(
+            split=test_split, pairs_dir=pairs_dir, image_mode=image_mode, resize=resize
+        )
+        save_jsonl(output_dir / f"{run_name}_{test_split}_scores.jsonl", test_scores)
+        val_metrics = evaluate_scored_split(labels=val_labels, scores=val_score_values, threshold=threshold)
+        test_metrics = evaluate_scored_split(labels=test_labels, scores=test_score_values, threshold=threshold)
+        threshold_information = {
+            "selection_strategy": "fixed_threshold",
+            "score_metric": "cosine_similarity",
+            "threshold": threshold,
+        }
+        metrics = {
+            val_split: val_metrics,
+            test_split: test_metrics,
+        }
+        short_note = (
+            "Simple non-learnable baseline: grayscale resize, flatten, L2 normalize, cosine similarity."
+        )
 
     summary = {
         "run_identifier": run_name,
         "commit_hash": get_git_commit_hash(),
         "config_path": str(args.config),
         "pairs_dir": str(pairs_dir),
-        "threshold_information": {
-            "selection_strategy": "fixed_threshold",
-            "score_metric": "cosine_similarity",
-            "threshold": threshold,
-        },
-        "metrics": {
-            val_split: val_metrics,
-            test_split: test_metrics,
-        },
-        "short_note_on_what_changed": (
-            "Simple non-learnable baseline: grayscale resize, flatten, L2 normalize, cosine similarity."
-        ),
+        "threshold_information": threshold_information,
+        "metrics": metrics,
+        "short_note_on_what_changed": short_note,
     }
 
     summary_path = output_dir / f"{run_name}_summary.json"

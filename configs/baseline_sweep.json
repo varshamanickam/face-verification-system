@@ -1,0 +1,12 @@
+{
+  "run_name": "baseline_sweep",
+  "description": "Validation-only threshold sweep for the simple non-learnable baseline.",
+  "pairs_dir": "outputs/pairs",
+  "split_for_threshold_selection": "val",
+  "selection_strategy": "threshold_sweep",
+  "image_mode": "L",
+  "resize": [
+    32,
+    32
+  ]
+}

@@ -20,6 +20,7 @@ importlib_resources==6.5.2
 keras==3.13.2
 libclang==18.1.1
 Markdown==3.10.2
+matplotlib==3.10.8
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
