@@ -13,3 +13,4 @@ outputs/
 *.tfrecord
 data/
 data_cache/
+notes/

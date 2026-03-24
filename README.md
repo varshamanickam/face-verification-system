@@ -25,8 +25,11 @@ face-verification-system/
 │ └── benchmark_similarity.py
 │
 ├── outputs/ # generated (gitignored)
-│ ├── manifest.json
 │ ├── pairs/
+│ │ ├── manifest.json
+│ │ ├── train.jsonl
+│ │ ├── val.jsonl
+│ │ └── test.jsonl
 │ └── bench/
 │
 ├── requirements.txt
@@ -72,7 +75,7 @@ This script will:
 
 ### Files generated
 After running 'generate_pairs.py', you will see:
-- `outputs/manifest.json`
+- `outputs/pairs/manifest.json`
 - `outputs/pairs/train.jsonl`
 - `outputs/pairs/val.jsonl`
 - `outputs/pairs/test.jsonl`

@@ -243,6 +243,7 @@ def main() -> None:
     image_mode = cfg.get("image_mode", "L")
     resize = tuple(int(value) for value in cfg.get("resize", [32, 32]))
     selection_strategy = cfg.get("selection_strategy", "fixed_threshold")
+    short_note = cfg.get("short_note_on_what_changed", "")
     val_split = cfg.get("split_for_threshold_selection", "val")
     val_labels, val_score_values, val_scores = score_split(
         split=val_split, pairs_dir=pairs_dir, image_mode=image_mode, resize=resize
@@ -277,10 +278,6 @@ def main() -> None:
             val_split: val_metrics,
             test_split: test_metrics,
         }
-        short_note = (
-            "Threshold sweep for the simple non-learnable baseline. "
-            "Best threshold selected on validation by F1 and then applied to test."
-        )
     else:
         threshold = float(cfg.get("fixed_threshold", 0.9))
         test_split = cfg.get("split_for_final_reporting", "test")
@@ -299,9 +296,6 @@ def main() -> None:
             val_split: val_metrics,
             test_split: test_metrics,
         }
-        short_note = (
-            "Simple non-learnable baseline: grayscale resize, flatten, L2 normalize, cosine similarity."
-        )
 
     summary = {
         "run_identifier": run_name,

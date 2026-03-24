@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 lfw_data_dir = "data/lfw"
+output_root_dir = os.path.join("outputs", "pairs_v2")
 
 # if the dataset is not already downloaded, it will be downloaded to data_cache/downloads 
 # and extracted to data_cache/downloads/extracted then copied to data/lfw. 
@@ -82,6 +83,7 @@ random_seed = 42
 
 # Create a manifest json
 manifest = {
+    "data_or_pair_version": "pairs_v2_no_self_pairs_in_val_test",
     "seed": random_seed,
     "split_policy": {
         "split_basis": "identity level",
@@ -100,15 +102,21 @@ manifest = {
 
     },
     "data_source": "LFW dataset from TensorFlow Datasets at https://www.tensorflow.org/datasets/catalog/lfw, downloaded and extracted to data/lfw",
+    "pair_policy": {
+        "train_allow_self_pairs": True,
+        "val_allow_self_pairs": False,
+        "test_allow_self_pairs": False,
+    },
 }
 
-output_path = os.path.join("outputs", "manifest.json") 
-os.makedirs(os.path.dirname(output_path), exist_ok=True) 
-with open(output_path, "w") as f: json.dump(manifest, f, indent=2) 
-print("Manifest written to outputs/manifest.json")
+manifest_path = os.path.join(output_root_dir, "manifest.json")
+os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
+with open(manifest_path, "w") as f:
+    json.dump(manifest, f, indent=2)
+print(f"Manifest written to {manifest_path}")
 
 
-def generate_pairs(id_map: dict, num_pairs: int, seed: int):
+def generate_pairs(id_map: dict, num_pairs: int, seed: int, allow_self_pairs: bool = True):
     """
     Returns list of [i, j, y] pairs, y in {0,1}, roughly 50/50 pos/neg.
     Deterministic given seed.
@@ -124,7 +132,12 @@ def generate_pairs(id_map: dict, num_pairs: int, seed: int):
     i = 0
     while i < same_count:
         id = rng.choice(list(id_map.keys()))
-        img1, img2 = rng.choice(id_map[id], size=2, replace=True) # allow identical pairs (same image) as well as different pairs of the same identity
+        if allow_self_pairs:
+            img1, img2 = rng.choice(id_map[id], size=2, replace=True)
+        else:
+            if len(id_map[id]) < 2:
+                continue
+            img1, img2 = rng.choice(id_map[id], size=2, replace=False)
         pairs.append([img1, img2, 1])
         i += 1
 
@@ -148,14 +161,14 @@ val_id_map = {id: [img for img, label in data if label == id and label in val_la
 test_id_map = {id: [img for img, label in data if label == id and label in test_labels] for id in test_labels}
 
 # generate pairs for each split
-train_pairs = generate_pairs(train_id_map, num_pairs=10000, seed=random_seed)
-val_pairs = generate_pairs(val_id_map, num_pairs=2000, seed=random_seed)
-test_pairs = generate_pairs(test_id_map, num_pairs=2000, seed=random_seed)
+train_pairs = generate_pairs(train_id_map, num_pairs=10000, seed=random_seed, allow_self_pairs=True)
+val_pairs = generate_pairs(val_id_map, num_pairs=2000, seed=random_seed, allow_self_pairs=False)
+test_pairs = generate_pairs(test_id_map, num_pairs=2000, seed=random_seed, allow_self_pairs=False)
 
 # save each split to a jsonl file with fields "left_path", "right_path", "label", "split"
 
 def save_pairs(pairs, split):
-    pairs_dir = os.path.join("outputs", "pairs")
+    pairs_dir = output_root_dir
     os.makedirs(pairs_dir, exist_ok=True)
 
     output_path = os.path.join(pairs_dir, f"{split}.jsonl")
