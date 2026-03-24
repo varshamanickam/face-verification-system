@@ -4,6 +4,7 @@
   "pairs_dir": "outputs/pairs",
   "split_for_threshold_selection": "val",
   "split_for_final_reporting": "test",
+  "short_note_on_what_changed": "Simple non-learnable baseline: grayscale resize, flatten, L2 normalize, cosine similarity.",
   "image_mode": "L",
   "resize": [
     32,

@@ -4,6 +4,7 @@
   "pairs_dir": "outputs/pairs",
   "split_for_threshold_selection": "val",
   "selection_strategy": "threshold_sweep",
+  "short_note_on_what_changed": "Threshold sweep for the simple non-learnable baseline. Best threshold selected on validation by F1 and then applied to test.",
   "image_mode": "L",
   "resize": [
     32,
