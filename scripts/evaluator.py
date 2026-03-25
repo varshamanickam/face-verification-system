@@ -1,7 +1,7 @@
 import argparse
 import json
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import matplotlib
 import numpy as np
@@ -85,6 +85,15 @@ def compute_metrics(labels: np.ndarray, predictions: np.ndarray) -> dict:
     validate_metrics(metrics)
     return metrics
 
+def build_confusion_matrix_dict(metrics: dict) -> dict:
+    return {
+        "rows": ["actual_1", "actual_0"],
+        "cols": ["pred_1", "pred_0"],
+        "matrix": [
+            [metrics["tp"], metrics["fn"]],
+            [metrics["fp"], metrics["tn"]],
+        ],
+    }
 
 def get_git_commit_hash() -> str | None:
     try:
@@ -275,6 +284,10 @@ def main() -> None:
             val_split: val_metrics,
             test_split: test_metrics,
         }
+        confusion_matrices = {
+            val_split: build_confusion_matrix_dict(val_metrics),
+            test_split: build_confusion_matrix_dict(test_metrics),
+        }
     else:
         threshold = float(cfg.get("fixed_threshold", 0.9))
         test_split = cfg.get("split_for_final_reporting", "test")
@@ -294,6 +307,10 @@ def main() -> None:
             val_split: val_metrics,
             test_split: test_metrics,
         }
+        confusion_matrices = {
+            val_split: build_confusion_matrix_dict(val_metrics),
+            test_split: build_confusion_matrix_dict(test_metrics),
+        }
 
     summary = {
         "run_identifier": run_name,
@@ -302,6 +319,7 @@ def main() -> None:
         "pairs_dir": str(pairs_dir),
         "threshold_information": threshold_information,
         "metrics": metrics,
+        "confusion_matrices": confusion_matrices,
         "short_note_on_what_changed": short_note,
     }
 
