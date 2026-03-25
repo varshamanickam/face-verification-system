@@ -52,8 +52,8 @@ face-verification-system/
 │   └── validation.py
 ├── tests/
 ├── outputs/                # generated, gitignored
-│   ├── pairs/              # original pair set (historical baseline)
-│   ├── pairs_v2/           # current reproducible data-centric pair set
+│   ├── pairs/              # reproducible baseline pair set
+│   ├── pairs_v2/           # reproducible data-centric pair set
 │   ├── bench/
 │   └── runs/
 └── README.md
@@ -72,16 +72,27 @@ pip install -e .
 
 ## How To Run 
 
-### 1. Generate the current pair set
+### 1. Generate pair sets
 
-The current generator writes the data-centric version to `outputs/pairs_v2/`.
+Generate the original baseline pair version:
 
 ```bash
-python scripts/generate_pairs.py
+python scripts/generate_pairs.py --pair-version baseline
 ```
+Generate the data-centric pair version:
+```bash
+python scripts/generate_pairs.py --pair-version v2
 
+```
 Generated files:
 
+Baseline pair version:
+- `outputs/pairs/manifest.json`
+- `outputs/pairs/train.jsonl`
+- `outputs/pairs/val.jsonl`
+- `outputs/pairs/test.jsonl`
+
+and Data-centric pair version:
 - `outputs/pairs_v2/manifest.json`
 - `outputs/pairs_v2/train.jsonl`
 - `outputs/pairs_v2/val.jsonl`
@@ -128,8 +139,9 @@ python scripts/evaluator.py --config configs/baseline_best.json
 
 Note:
 
-- the current `generate_pairs.py` reproduces `pairs_v2`
-- `outputs/pairs` is the original pair set generated in Milestone 1(v0.1) used for the tracked baseline comparison
+- the current `generate_pairs.py` reproduces both `pairs` and `pairs_v2` depending on the selected `--pair-version`
+- `outputs/pairs` is the baseline pair version
+- `outputs/pairs_v2` is the data-centric pair version with self-pairs removed from validation and test
 
 ### 5. Run the benchmark
 
@@ -231,15 +243,22 @@ Current data-centric pair set:
 
 ## Reproducing The Main Reported Result
 
-For the current clean-clone workflow, the most reproducible result is the data-centric sweep on `pairs_v2`, because the current generator recreates that dataset version directly.
+The main reported result in the report is the stricter data-centric evaluation on `outputs/pairs_v2`.
 
-Use:
+Generate the data-centric pair set and run the evaluation:
 
 ```bash
-python scripts/generate_pairs.py
+python scripts/generate_pairs.py --pair-version v2
 python scripts/validate_pipeline.py --config configs/after_change_sweep.json
 python scripts/evaluator.py --config configs/after_change_sweep.json
 python scripts/evaluator.py --config configs/after_change_best.json
+```
+
+For baseline comparison, the original pair version is also reproducible with:
+```bash
+python scripts/generate_pairs.py --pair-version baseline
+python scripts/evaluator.py --config configs/baseline_sweep.json
+python scripts/evaluator.py --config configs/baseline_best.json
 ```
 
 The resulting main artifacts will be:
@@ -263,10 +282,22 @@ Before tagging the milestone, the intended clean-clone check is:
 
 1. start from a fresh clone
 2. follow the setup commands above exactly
-3. run `generate_pairs.py`
-4. run `validate_pipeline.py`
-5. run the `after_change_sweep` and `after_change_best` configs
-6. run `pytest -q`
-7. confirm the expected files in `outputs/pairs_v2/` and `outputs/runs/after_change_*`
+3. generate both pair versions
+   `python scripts/generate_pairs.py --pair-version baseline`
+   `python scripts/generate_pairs.py --pair-version v2`
+4. Validate inputs by running:
+   `python scripts/validate_pipeline.py --config configs/after_change_sweep.json`
+   `python scripts/validate_pipeline.py --config configs/baseline.json`
+5. run evaluation configs 
+   `python scripts/evaluator.py --config configs/after_change_sweep.json`
+   `python scripts/evaluator.py --config configs/after_change_best.json`
+   `python scripts/evaluator.py --config configs/baseline_sweep.json`
+   `python scripts/evaluator.py --config configs/baseline_best.json`
+   `python scripts/evaluator.py --config configs/baseline.json`
+6. run tests using `pytest -q`
+7. confirm expected artifacts exist under:
+   `outputs/pairs/`
+   `outputs/pairs_v2/`
+   `outputs/runs/`
 
-The historical `outputs/pairs` baseline is kept for comparison, but the current generator is centered on reproducing `pairs_v2`.
+Both `outputs/pairs` and `outputs/pairs_v2` are reproducible from the current generator by choosing the appropriate --pair-version.
