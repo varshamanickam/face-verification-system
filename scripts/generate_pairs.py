@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 
@@ -5,6 +6,34 @@ import numpy as np
 
 lfw_data_dir = "data/lfw"
 output_root_dir = os.path.join("outputs", "pairs_v2")
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate deterministic face verification pairs")
+    parser.add_argument(
+        "--pair-version",
+        choices=["baseline", "v2"],
+        default="baseline",
+        help="Which pair-generation policy to use.",
+    )
+    return parser.parse_args()
+
+
+args = parse_args()
+
+lfw_data_dir = "data/lfw"
+
+if args.pair_version == "baseline":
+    output_root_dir = os.path.join("outputs", "pairs")
+    manifest_version = "baseline_pairs_v1"
+    train_allow_self_pairs = True
+    val_allow_self_pairs = True
+    test_allow_self_pairs = True
+elif args.pair_version == "v2":
+    output_root_dir = os.path.join("outputs", "pairs_v2")
+    manifest_version = "pairs_v2_no_self_pairs_in_val_test"
+    train_allow_self_pairs = True
+    val_allow_self_pairs = False
+    test_allow_self_pairs = False
 
 # if the dataset is not already downloaded, it will be downloaded to data_cache/downloads 
 # and extracted to data_cache/downloads/extracted then copied to data/lfw. 
@@ -83,7 +112,7 @@ random_seed = 42
 
 # Create a manifest json
 manifest = {
-    "data_or_pair_version": "pairs_v2_no_self_pairs_in_val_test",
+    "data_or_pair_version": manifest_version,
     "seed": random_seed,
     "split_policy": {
         "split_basis": "identity level",
@@ -103,9 +132,9 @@ manifest = {
     },
     "data_source": "LFW dataset from TensorFlow Datasets at https://www.tensorflow.org/datasets/catalog/lfw, downloaded and extracted to data/lfw",
     "pair_policy": {
-        "train_allow_self_pairs": True,
-        "val_allow_self_pairs": False,
-        "test_allow_self_pairs": False,
+        "train_allow_self_pairs": train_allow_self_pairs,
+        "val_allow_self_pairs": val_allow_self_pairs,
+        "test_allow_self_pairs": test_allow_self_pairs,
     },
 }
 
@@ -161,9 +190,24 @@ val_id_map = {id: [img for img, label in data if label == id and label in val_la
 test_id_map = {id: [img for img, label in data if label == id and label in test_labels] for id in test_labels}
 
 # generate pairs for each split
-train_pairs = generate_pairs(train_id_map, num_pairs=10000, seed=random_seed, allow_self_pairs=True)
-val_pairs = generate_pairs(val_id_map, num_pairs=2000, seed=random_seed, allow_self_pairs=False)
-test_pairs = generate_pairs(test_id_map, num_pairs=2000, seed=random_seed, allow_self_pairs=False)
+train_pairs = generate_pairs(
+    train_id_map,
+    num_pairs=10000,
+    seed=random_seed,
+    allow_self_pairs=train_allow_self_pairs,
+)
+val_pairs = generate_pairs(
+    val_id_map,
+    num_pairs=2000,
+    seed=random_seed,
+    allow_self_pairs=val_allow_self_pairs,
+)
+test_pairs = generate_pairs(
+    test_id_map,
+    num_pairs=2000,
+    seed=random_seed,
+    allow_self_pairs=test_allow_self_pairs,
+)
 
 # save each split to a jsonl file with fields "left_path", "right_path", "label", "split"
 
@@ -185,6 +229,9 @@ def save_pairs(pairs, split):
 
     print(f"Saved {len(pairs)} pairs to {output_path}")
 
+#printing so it's obvious which versiosn ran
+print(f"Generating pair version: {args.pair_version}")
+print(f"Output directory: {output_root_dir}")
 save_pairs(train_pairs, "train")
 save_pairs(val_pairs, "val")
 save_pairs(test_pairs, "test")
