@@ -1,6 +1,6 @@
 {
   "run_identifier": "after_change_sweep",
-  "commit_hash": "9a87ec9db33049fc11b738a4cd7369a18018eba1",
+  "commit_hash": "fa4a048becaa259de36d558cdb90ca931b21d69d",
   "config_path": "configs/after_change_sweep.json",
   "pairs_dir": "outputs/pairs_v2",
   "threshold_information": {
@@ -8,7 +8,7 @@
     "selection_split": "val",
     "selection_metric": "f1",
     "score_metric": "cosine_similarity",
-    "best_threshold": 0.5853148971300512,
+    "best_threshold": 0.5853091582168102,
     "num_candidates": 2861
   },
   "metrics": {
@@ -35,47 +35,5 @@
       "f1": 0.648910411622276
     }
   },
-  "confusion_matrices": {
-    "val": {
-      "rows": [
-        "actual_1",
-        "actual_0"
-      ],
-      "cols": [
-        "pred_1",
-        "pred_0"
-      ],
-      "matrix": [
-        [
-          977,
-          23
-        ],
-        [
-          924,
-          76
-        ]
-      ]
-    },
-    "test": {
-      "rows": [
-        "actual_1",
-        "actual_0"
-      ],
-      "cols": [
-        "pred_1",
-        "pred_0"
-      ],
-      "matrix": [
-        [
-          938,
-          62
-        ],
-        [
-          953,
-          47
-        ]
-      ]
-    }
-  },
-  "short_note_on_what_changed": "Threshold sweep after data centric pair policy change. Self pairs are still allowed in train but removed from validation and test so evaluation is stricter and more realistic. Best threshold selected on validation by F1."
+  "short_note_on_what_changed": "Threshold sweep after data centric change of removing self-pairs and capping identity over-representation. Best threshold selected on validation by F1."
 }

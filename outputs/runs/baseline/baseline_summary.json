@@ -1,6 +1,6 @@
 {
   "run_identifier": "baseline",
-  "commit_hash": "9a87ec9db33049fc11b738a4cd7369a18018eba1",
+  "commit_hash": "4b231f2649e79f64da91cdf50fcb4a111da9590c",
   "config_path": "configs/baseline.json",
   "pairs_dir": "outputs/pairs",
   "threshold_information": {
@@ -30,48 +30,6 @@
       "precision": 0.9881516587677726,
       "recall": 0.834,
       "f1": 0.9045553145336225
-    }
-  },
-  "confusion_matrices": {
-    "val": {
-      "rows": [
-        "actual_1",
-        "actual_0"
-      ],
-      "cols": [
-        "pred_1",
-        "pred_0"
-      ],
-      "matrix": [
-        [
-          808,
-          192
-        ],
-        [
-          15,
-          985
-        ]
-      ]
-    },
-    "test": {
-      "rows": [
-        "actual_1",
-        "actual_0"
-      ],
-      "cols": [
-        "pred_1",
-        "pred_0"
-      ],
-      "matrix": [
-        [
-          834,
-          166
-        ],
-        [
-          10,
-          990
-        ]
-      ]
     }
   },
   "short_note_on_what_changed": "Simple non-learnable baseline: grayscale resize, flatten, L2 normalize, cosine similarity."

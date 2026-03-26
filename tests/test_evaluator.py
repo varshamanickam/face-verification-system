@@ -68,24 +68,6 @@ def test_score_split_count_matches_pair_count(tmp_path):
     assert scores.shape == (2,)
     assert len(rows) == 2
 
-def test_build_confusion_matrix_dict_layout():
-    metrics = {
-        "tp": 3,
-        "tn": 4,
-        "fp": 1,
-        "fn": 2,
-        "accuracy": 0.0,
-        "balanced_accuracy": 0.0,
-        "precision": 0.0,
-        "recall": 0.0,
-        "f1": 0.0,
-    }
-
-    matrix = evaluator.build_confusion_matrix_dict(metrics)
-
-    assert matrix["rows"] == ["actual_1", "actual_0"]
-    assert matrix["cols"] == ["pred_1", "pred_0"]
-    assert matrix["matrix"] == [[3, 2], [1, 4]]
 
 def test_integration_fixed_threshold_run_writes_outputs(tmp_path, monkeypatch):
     pairs_dir = tmp_path / "pairs"
@@ -148,5 +130,3 @@ def test_integration_fixed_threshold_run_writes_outputs(tmp_path, monkeypatch):
     assert summary["run_identifier"] == "tiny_integration"
     assert set(summary["metrics"].keys()) == {"val", "test"}
     assert summary["threshold_information"]["threshold"] == 0.9
-    assert "confusion_matrices" in summary
-    assert set(summary["confusion_matrices"].keys()) == {"val", "test"}
