@@ -1,6 +1,6 @@
 {
   "run_name": "baseline_sweep",
-  "description": "Validation-only threshold sweep for the simple non-learnable baseline.",
+  "description": "Threshold sweep on validation for the simple non-learnable baseline with the selected threshold then applied to test.",
   "pairs_dir": "outputs/pairs",
   "split_for_threshold_selection": "val",
   "selection_strategy": "threshold_sweep",
