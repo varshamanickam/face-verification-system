@@ -1,6 +1,6 @@
 {
   "run_name": "after_change_sweep",
-  "description": "Threshold sweep for the simple non-learnable baseline on pairs_v2.",
+  "description": "Threshold sweep on validation for the simple non-learnable baseline on pairs_v2.",
   "pairs_dir": "outputs/pairs_v2",
   "split_for_threshold_selection": "val",
   "split_for_final_reporting": "test",
