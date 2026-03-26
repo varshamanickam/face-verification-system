@@ -1,12 +1,12 @@
 {
   "run_identifier": "after_change_best",
-  "commit_hash": "4ed9a517545916de327ed98a69fdd646fc687e2e",
+  "commit_hash": "8de47947274955eac22ce0e2fe9e403a94d47295",
   "config_path": "configs/after_change_best.json",
   "pairs_dir": "outputs/pairs_v2",
   "threshold_information": {
     "selection_strategy": "fixed_threshold",
     "score_metric": "cosine_similarity",
-    "threshold": 0.5853091582168102
+    "threshold": 0.5853148971300512
   },
   "metrics": {
     "val": {
@@ -32,5 +32,47 @@
       "f1": 0.648910411622276
     }
   },
-  "short_note_on_what_changed": "Best-threshold run after data centric change of removing self-pairs and capping identity over-representation. Uses the threshold selected on validation and applies it to test."
+  "confusion_matrices": {
+    "val": {
+      "rows": [
+        "actual_1",
+        "actual_0"
+      ],
+      "cols": [
+        "pred_1",
+        "pred_0"
+      ],
+      "matrix": [
+        [
+          977,
+          23
+        ],
+        [
+          924,
+          76
+        ]
+      ]
+    },
+    "test": {
+      "rows": [
+        "actual_1",
+        "actual_0"
+      ],
+      "cols": [
+        "pred_1",
+        "pred_0"
+      ],
+      "matrix": [
+        [
+          938,
+          62
+        ],
+        [
+          953,
+          47
+        ]
+      ]
+    }
+  },
+  "short_note_on_what_changed": "Best-threshold run after data centric change of removing self-pairs. Uses the threshold selected on validation and applies it to test."
 }
