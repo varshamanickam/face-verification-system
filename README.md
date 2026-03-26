@@ -41,12 +41,14 @@ This makes the evaluation set less artificially easy and gives a clearer picture
 ```text
 face-verification-system/
 ├── configs/
-├── notes/
+├── reports/
+│    ├── evaluation_report.md
 ├── scripts/
 │   ├── benchmark_similarity.py
 │   ├── evaluator.py
 │   ├── generate_pairs.py
 │   └── validate_pipeline.py
+│   ├── falseneg_falsepos.py  # script to pull out some examples for false neg and false positives for error analysis
 ├── src/
 │   ├── similarity_metrics.py
 │   └── validation.py
