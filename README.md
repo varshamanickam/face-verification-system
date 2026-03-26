@@ -21,7 +21,7 @@ The milestone focuses on:
 
 ### Baseline
 
-The baseline uses the original pair set in `outputs/pairs` generated in Milestone 1 and evaluates a fixed-threshold and validation-sweep version of the same raw-pixel cosine verifier.
+The baseline uses the original pair policy reproduced in `outputs/pairs` and evaluates a fixed-threshold and validation-sweep version of the same raw-pixel cosine verifier.
 
 
 ### Data-Centric Improvement
@@ -42,13 +42,13 @@ This makes the evaluation set less artificially easy and gives a clearer picture
 face-verification-system/
 ├── configs/
 ├── reports/
-│    ├── evaluation_report.md
+│   ├── evaluation_report.md
 ├── scripts/
 │   ├── benchmark_similarity.py
 │   ├── evaluator.py
 │   ├── generate_pairs.py
-│   └── validate_pipeline.py
-│   ├── falseneg_falsepos.py  # script to pull out some examples for false neg and false positives for error analysis
+│   ├── validate_pipeline.py
+│   └── falseneg_falsepos.py  # script to pull out some examples for false neg and false positives for error analysis
 ├── src/
 │   ├── similarity_metrics.py
 │   └── validation.py
@@ -82,6 +82,7 @@ Generate the original baseline pair version:
 python scripts/generate_pairs.py --pair-version baseline
 ```
 Generate the data-centric pair version:
+
 ```bash
 python scripts/generate_pairs.py --pair-version v2
 
@@ -182,7 +183,7 @@ python scripts/validate_pipeline.py --config configs/baseline.json
 
 ### Report
 
-- `notes/evaluation_report.md`
+- `reports/evaluation_report.md`
 
 
 ### Important Run Outputs
@@ -237,11 +238,11 @@ Tracked runs:
 
 Original pair set:
 
-- selected on validation: `0.9266850288062412`
+- selected on validation: `0.9266837672022352`
 
 Current data-centric pair set:
 
-- selected on validation: `0.5853091582168102`
+- selected on validation: `0.5853148971300512`
 
 ## Reproducing The Main Reported Result
 
@@ -285,21 +286,28 @@ Before tagging the milestone, the intended clean-clone check is:
 1. start from a fresh clone
 2. follow the setup commands above exactly
 3. generate both pair versions
-   `python scripts/generate_pairs.py --pair-version baseline`
-   `python scripts/generate_pairs.py --pair-version v2`
+    ```bash
+    python scripts/generate_pairs.py --pair-version baseline
+    python scripts/generate_pairs.py --pair-version v2
+   ```
 4. Validate inputs by running:
-   `python scripts/validate_pipeline.py --config configs/after_change_sweep.json`
-   `python scripts/validate_pipeline.py --config configs/baseline.json`
+    ```bash   
+    python scripts/validate_pipeline.py --config configs/after_change_sweep.json
+    python scripts/validate_pipeline.py --config configs/baseline.json
+   ```
 5. run evaluation configs 
-   `python scripts/evaluator.py --config configs/after_change_sweep.json`
-   `python scripts/evaluator.py --config configs/after_change_best.json`
-   `python scripts/evaluator.py --config configs/baseline_sweep.json`
-   `python scripts/evaluator.py --config configs/baseline_best.json`
-   `python scripts/evaluator.py --config configs/baseline.json`
+    ```bash
+    python scripts/evaluator.py --config configs/after_change_sweep.json
+    python scripts/evaluator.py --config configs/after_change_best.json
+    python scripts/evaluator.py --config configs/baseline_sweep.json
+    python scripts/evaluator.py --config configs/baseline_best.json
+    python scripts/evaluator.py --config configs/baseline.json
+    ```
 6. run tests using `pytest -q`
 7. confirm expected artifacts exist under:
-   `outputs/pairs/`
-   `outputs/pairs_v2/`
-   `outputs/runs/`
-
-Both `outputs/pairs` and `outputs/pairs_v2` are reproducible from the current generator by choosing the appropriate --pair-version.
+    ```bash
+    outputs/pairs/
+    outputs/pairs_v2/
+    outputs/runs/
+    ```
+Both `outputs/pairs` and `outputs/pairs_v2` are reproducible from the current generator by choosing the appropriate `--pair-version`.
