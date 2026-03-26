@@ -1,7 +1,7 @@
 import argparse
 import json
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import matplotlib
 import numpy as np
@@ -85,6 +85,15 @@ def compute_metrics(labels: np.ndarray, predictions: np.ndarray) -> dict:
     validate_metrics(metrics)
     return metrics
 
+def build_confusion_matrix_dict(metrics: dict) -> dict:
+    return {
+        "rows": ["actual_1", "actual_0"],
+        "cols": ["pred_1", "pred_0"],
+        "matrix": [
+            [metrics["tp"], metrics["fn"]],
+            [metrics["fp"], metrics["tn"]],
+        ],
+    }
 
 def get_git_commit_hash() -> str | None:
     try:
@@ -141,7 +150,8 @@ def threshold_candidates(scores: np.ndarray) -> np.ndarray:
     unique_scores = np.unique(scores)
     if unique_scores.size == 1:
         score = float(unique_scores[0])
-        return np.asarray([score - 1e-6, score, score + 1e-6], dtype=np.float64)
+        candidates = np.asarray([score - 1e-6, score, score + 1e-6], dtype=np.float64)
+        return np.clip(np.unique(candidates), -1.0, 1.0)
 
     midpoints = (unique_scores[:-1] + unique_scores[1:]) / 2.0
     candidates = np.concatenate(
@@ -152,7 +162,7 @@ def threshold_candidates(scores: np.ndarray) -> np.ndarray:
             np.asarray([unique_scores[-1] + 1e-6], dtype=np.float64),
         ]
     )
-    return np.unique(candidates)
+    return np.clip(np.unique(candidates), -1.0, 1.0)
 
 
 def threshold_sweep(labels: np.ndarray, scores: np.ndarray) -> tuple[float, dict, list[dict]]:
@@ -275,6 +285,10 @@ def main() -> None:
             val_split: val_metrics,
             test_split: test_metrics,
         }
+        confusion_matrices = {
+            val_split: build_confusion_matrix_dict(val_metrics),
+            test_split: build_confusion_matrix_dict(test_metrics),
+        }
     else:
         threshold = float(cfg.get("fixed_threshold", 0.9))
         test_split = cfg.get("split_for_final_reporting", "test")
@@ -294,6 +308,10 @@ def main() -> None:
             val_split: val_metrics,
             test_split: test_metrics,
         }
+        confusion_matrices = {
+            val_split: build_confusion_matrix_dict(val_metrics),
+            test_split: build_confusion_matrix_dict(test_metrics),
+        }
 
     summary = {
         "run_identifier": run_name,
@@ -302,6 +320,7 @@ def main() -> None:
         "pairs_dir": str(pairs_dir),
         "threshold_information": threshold_information,
         "metrics": metrics,
+        "confusion_matrices": confusion_matrices,
         "short_note_on_what_changed": short_note,
     }
 

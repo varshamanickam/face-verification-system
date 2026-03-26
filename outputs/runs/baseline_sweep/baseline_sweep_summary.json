@@ -1,6 +1,6 @@
 {
   "run_identifier": "baseline_sweep",
-  "commit_hash": "387871666b83467db4f10d6260bc49d892be5a45",
+  "commit_hash": "9a87ec9db33049fc11b738a4cd7369a18018eba1",
   "config_path": "configs/baseline_sweep.json",
   "pairs_dir": "outputs/pairs",
   "threshold_information": {
@@ -8,7 +8,7 @@
     "selection_split": "val",
     "selection_metric": "f1",
     "score_metric": "cosine_similarity",
-    "best_threshold": 0.9266850288062412,
+    "best_threshold": 0.9266837672022352,
     "num_candidates": 2341
   },
   "metrics": {
@@ -33,6 +33,48 @@
       "precision": 0.9952038369304557,
       "recall": 0.83,
       "f1": 0.9051254089422028
+    }
+  },
+  "confusion_matrices": {
+    "val": {
+      "rows": [
+        "actual_1",
+        "actual_0"
+      ],
+      "cols": [
+        "pred_1",
+        "pred_0"
+      ],
+      "matrix": [
+        [
+          803,
+          197
+        ],
+        [
+          0,
+          1000
+        ]
+      ]
+    },
+    "test": {
+      "rows": [
+        "actual_1",
+        "actual_0"
+      ],
+      "cols": [
+        "pred_1",
+        "pred_0"
+      ],
+      "matrix": [
+        [
+          830,
+          170
+        ],
+        [
+          4,
+          996
+        ]
+      ]
     }
   },
   "short_note_on_what_changed": "Threshold sweep for the simple non-learnable baseline. Best threshold selected on validation by F1 and then applied to test."

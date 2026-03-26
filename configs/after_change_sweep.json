@@ -1,11 +1,11 @@
 {
   "run_name": "after_change_sweep",
-  "description": "Threshold sweep for the simple non-learnable baseline on pairs_v2.",
+  "description": "Threshold sweep on validation for the simple non-learnable baseline on pairs_v2.",
   "pairs_dir": "outputs/pairs_v2",
   "split_for_threshold_selection": "val",
   "split_for_final_reporting": "test",
   "selection_strategy": "threshold_sweep",
-  "short_note_on_what_changed": "Threshold sweep after data centric change of removing self-pairs and capping identity over-representation. Best threshold selected on validation by F1.",
+  "short_note_on_what_changed": "Threshold sweep after data centric pair policy change. Self pairs are still allowed in train but removed from validation and test so evaluation is stricter and more realistic. Best threshold selected on validation by F1.",
   "image_mode": "L",
   "resize": [
     32,

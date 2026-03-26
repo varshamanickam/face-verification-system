@@ -21,7 +21,7 @@ The milestone focuses on:
 
 ### Baseline
 
-The baseline uses the original pair set in `outputs/pairs` generated in Milestone 1 and evaluates a fixed-threshold and validation-sweep version of the same raw-pixel cosine verifier.
+The baseline uses the original pair policy reproduced in `outputs/pairs` and evaluates a fixed-threshold and validation-sweep version of the same raw-pixel cosine verifier.
 
 
 ### Data-Centric Improvement
@@ -41,19 +41,21 @@ This makes the evaluation set less artificially easy and gives a clearer picture
 ```text
 face-verification-system/
 ├── configs/
-├── notes/
+├── reports/
+│   ├── evaluation_report.md
 ├── scripts/
 │   ├── benchmark_similarity.py
 │   ├── evaluator.py
 │   ├── generate_pairs.py
-│   └── validate_pipeline.py
+│   ├── validate_pipeline.py
+│   └── falseneg_falsepos.py  # script to pull out some examples for false neg and false positives for error analysis
 ├── src/
 │   ├── similarity_metrics.py
 │   └── validation.py
 ├── tests/
 ├── outputs/                # generated, gitignored
-│   ├── pairs/              # original pair set (historical baseline)
-│   ├── pairs_v2/           # current reproducible data-centric pair set
+│   ├── pairs/              # reproducible baseline pair set
+│   ├── pairs_v2/           # reproducible data-centric pair set
 │   ├── bench/
 │   └── runs/
 └── README.md
@@ -72,16 +74,28 @@ pip install -e .
 
 ## How To Run 
 
-### 1. Generate the current pair set
+### 1. Generate pair sets
 
-The current generator writes the data-centric version to `outputs/pairs_v2/`.
+Generate the original baseline pair version:
 
 ```bash
-python scripts/generate_pairs.py
+python scripts/generate_pairs.py --pair-version baseline
 ```
+Generate the data-centric pair version:
 
+```bash
+python scripts/generate_pairs.py --pair-version v2
+
+```
 Generated files:
 
+Baseline pair version:
+- `outputs/pairs/manifest.json`
+- `outputs/pairs/train.jsonl`
+- `outputs/pairs/val.jsonl`
+- `outputs/pairs/test.jsonl`
+
+and Data-centric pair version:
 - `outputs/pairs_v2/manifest.json`
 - `outputs/pairs_v2/train.jsonl`
 - `outputs/pairs_v2/val.jsonl`
@@ -128,8 +142,9 @@ python scripts/evaluator.py --config configs/baseline_best.json
 
 Note:
 
-- the current `generate_pairs.py` reproduces `pairs_v2`
-- `outputs/pairs` is the original pair set generated in Milestone 1(v0.1) used for the tracked baseline comparison
+- the current `generate_pairs.py` reproduces both `pairs` and `pairs_v2` depending on the selected `--pair-version`
+- `outputs/pairs` is the baseline pair version
+- `outputs/pairs_v2` is the data-centric pair version with self-pairs removed from validation and test
 
 ### 5. Run the benchmark
 
@@ -168,7 +183,7 @@ python scripts/validate_pipeline.py --config configs/baseline.json
 
 ### Report
 
-- `notes/evaluation_report.md`
+- `reports/evaluation_report.md`
 
 
 ### Important Run Outputs
@@ -223,23 +238,30 @@ Tracked runs:
 
 Original pair set:
 
-- selected on validation: `0.9266850288062412`
+- selected on validation: `0.9266837672022352`
 
 Current data-centric pair set:
 
-- selected on validation: `0.5853091582168102`
+- selected on validation: `0.5853148971300512`
 
 ## Reproducing The Main Reported Result
 
-For the current clean-clone workflow, the most reproducible result is the data-centric sweep on `pairs_v2`, because the current generator recreates that dataset version directly.
+The main reported result in the report is the stricter data-centric evaluation on `outputs/pairs_v2`.
 
-Use:
+Generate the data-centric pair set and run the evaluation:
 
 ```bash
-python scripts/generate_pairs.py
+python scripts/generate_pairs.py --pair-version v2
 python scripts/validate_pipeline.py --config configs/after_change_sweep.json
 python scripts/evaluator.py --config configs/after_change_sweep.json
 python scripts/evaluator.py --config configs/after_change_best.json
+```
+
+For baseline comparison, the original pair version is also reproducible with:
+```bash
+python scripts/generate_pairs.py --pair-version baseline
+python scripts/evaluator.py --config configs/baseline_sweep.json
+python scripts/evaluator.py --config configs/baseline_best.json
 ```
 
 The resulting main artifacts will be:
@@ -263,10 +285,29 @@ Before tagging the milestone, the intended clean-clone check is:
 
 1. start from a fresh clone
 2. follow the setup commands above exactly
-3. run `generate_pairs.py`
-4. run `validate_pipeline.py`
-5. run the `after_change_sweep` and `after_change_best` configs
-6. run `pytest -q`
-7. confirm the expected files in `outputs/pairs_v2/` and `outputs/runs/after_change_*`
-
-The historical `outputs/pairs` baseline is kept for comparison, but the current generator is centered on reproducing `pairs_v2`.
+3. generate both pair versions
+    ```bash
+    python scripts/generate_pairs.py --pair-version baseline
+    python scripts/generate_pairs.py --pair-version v2
+   ```
+4. Validate inputs by running:
+    ```bash   
+    python scripts/validate_pipeline.py --config configs/after_change_sweep.json
+    python scripts/validate_pipeline.py --config configs/baseline.json
+   ```
+5. run evaluation configs 
+    ```bash
+    python scripts/evaluator.py --config configs/after_change_sweep.json
+    python scripts/evaluator.py --config configs/after_change_best.json
+    python scripts/evaluator.py --config configs/baseline_sweep.json
+    python scripts/evaluator.py --config configs/baseline_best.json
+    python scripts/evaluator.py --config configs/baseline.json
+    ```
+6. run tests using `pytest -q`
+7. confirm expected artifacts exist under:
+    ```bash
+    outputs/pairs/
+    outputs/pairs_v2/
+    outputs/runs/
+    ```
+Both `outputs/pairs` and `outputs/pairs_v2` are reproducible from the current generator by choosing the appropriate `--pair-version`.
