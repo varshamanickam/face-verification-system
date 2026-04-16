@@ -46,6 +46,12 @@ face-verification-system/
 ├── scripts/
 │   ├── benchmark_similarity.py
 │   ├── evaluator.py
+|   ├── preprocessing.py
+|   ├── similarity_scoring.py
+|   ├── embedding_generation.py  
+|   ├── threshold_decision.py
+|   ├── latency_measurement.py
+|   ├── confidence_computation.py
 │   ├── generate_pairs.py
 │   ├── validate_pipeline.py
 │   └── falseneg_falsepos.py  # script to pull out some examples for false neg and false positives for error analysis
@@ -118,26 +124,76 @@ This checks:
 
 ### 3. Run the main reproducible evaluation
 
+Use evaluation mode when you want metrics on validation/test splits and tracked run artifacts.
+
 Validation sweep plus test evaluation on the current pair set:
 
 ```bash
-python scripts/evaluator.py --config configs/after_change_sweep.json
+python -m scripts.evaluator --config configs/after_change_sweep.json
 ```
 
 Then run the fixed-threshold follow-up using the selected validation threshold:
 
 ```bash
-python scripts/evaluator.py --config configs/after_change_best.json
+python -m scripts.evaluator --config configs/after_change_best.json
 ```
+
+ArcFace evaluation examples:
+
+```bash
+python -m scripts.evaluator --config configs/arcface_sweep.json
+python -m scripts.evaluator --config configs/arcface_best.json
+```
+
+Main evaluation outputs are written to `outputs/runs/<run_name>/`:
+
+- `<run_name>_summary.json`
+- `<run_name>_val_scores.jsonl`
+- `<run_name>_test_scores.jsonl`
+- `<run_name>_val_roc.png` (for sweep runs)
+
+### 3.1 Run inference mode (CLI)
+
+Use inference mode when you want per-pair decision output directly in terminal.
+
+Single pair inference:
+
+```bash
+python -m scripts.evaluator \
+  --config configs/arcface_best.json \
+  --embedding-backend arcface \
+  --left-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0001.jpg \
+  --right-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0002.jpg \
+  --pair-id demo_pair_1 \
+  --threshold 0.2658909489140911
+```
+
+Batch inference from a pairs file (`.jsonl` or `.csv`):
+
+```bash
+python -m scripts.evaluator \
+  --config configs/arcface_best.json \
+  --embedding-backend arcface \
+  --pairs-file outputs/pairs/inference_pairs.jsonl
+```
+
+Each pair prints:
+
+- pair identifier / input paths
+- similarity score
+- threshold used
+- binary decision
+- calibrated confidence
+- latency for that inference
 
 ### 4. Run the historical baseline configs
 
 These configs point to `outputs/pairs` and are kept for baseline comparison:
 
 ```bash
-python scripts/evaluator.py --config configs/baseline.json
-python scripts/evaluator.py --config configs/baseline_sweep.json
-python scripts/evaluator.py --config configs/baseline_best.json
+python -m scripts.evaluator --config configs/baseline.json
+python -m scripts.evaluator --config configs/baseline_sweep.json
+python -m scripts.evaluator --config configs/baseline_best.json
 ```
 
 Note:
@@ -234,6 +290,25 @@ Tracked runs:
   - purpose:
     - fixed-threshold rerun on `outputs/pairs_v2` using the selected threshold from `after_change_sweep`
 
+- `arcface_sweep`
+  - files:
+    - `outputs/runs/arcface_sweep/arcface_sweep_summary.json`
+    - `outputs/runs/arcface_sweep/arcface_sweep_val_scores.jsonl`
+    - `outputs/runs/arcface_sweep/arcface_sweep_val_threshold_sweep.jsonl`
+    - `outputs/runs/arcface_sweep/arcface_sweep_val_roc.png`
+    - `outputs/runs/arcface_sweep/arcface_sweep_test_scores.jsonl`
+    - purpose:
+    - threshold sweep using ArcFace embeddings on the original pair set
+
+- `arcface_best`
+  - files:
+    - `outputs/runs/arcface_best/arcface_best_summary.json`
+    - `outputs/runs/arcface_best/arcface_best_val_scores.jsonl`
+    - `outputs/runs/arcface_best/arcface_best_test_scores.jsonl`
+  - purpose:
+    - fixed-threshold rerun using ArcFace embeddings on the original pair set with the selected
+
+
 ### Selected Thresholds
 
 Original pair set:
@@ -244,6 +319,10 @@ Current data-centric pair set:
 
 - selected on validation: `0.5853148971300512`
 
+ArcFace embedding  with original pair set:
+
+- selected on validation: `0.2658909489140911`
+
 ## Reproducing The Main Reported Result
 
 The main reported result in the report is the stricter data-centric evaluation on `outputs/pairs_v2`.
@@ -253,15 +332,15 @@ Generate the data-centric pair set and run the evaluation:
 ```bash
 python scripts/generate_pairs.py --pair-version v2
 python scripts/validate_pipeline.py --config configs/after_change_sweep.json
-python scripts/evaluator.py --config configs/after_change_sweep.json
-python scripts/evaluator.py --config configs/after_change_best.json
+python -m scripts.evaluator --config configs/after_change_sweep.json
+python -m scripts.evaluator --config configs/after_change_best.json
 ```
 
 For baseline comparison, the original pair version is also reproducible with:
 ```bash
 python scripts/generate_pairs.py --pair-version baseline
-python scripts/evaluator.py --config configs/baseline_sweep.json
-python scripts/evaluator.py --config configs/baseline_best.json
+python -m scripts.evaluator --config configs/baseline_sweep.json
+python -m scripts.evaluator --config configs/baseline_best.json
 ```
 
 The resulting main artifacts will be:
@@ -297,11 +376,11 @@ Before tagging the milestone, the intended clean-clone check is:
    ```
 5. run evaluation configs 
     ```bash
-    python scripts/evaluator.py --config configs/after_change_sweep.json
-    python scripts/evaluator.py --config configs/after_change_best.json
-    python scripts/evaluator.py --config configs/baseline_sweep.json
-    python scripts/evaluator.py --config configs/baseline_best.json
-    python scripts/evaluator.py --config configs/baseline.json
+    python -m scripts.evaluator --config configs/after_change_sweep.json
+    python -m scripts.evaluator --config configs/after_change_best.json
+    python -m scripts.evaluator --config configs/baseline_sweep.json
+    python -m scripts.evaluator --config configs/baseline_best.json
+    python -m scripts.evaluator --config configs/baseline.json
     ```
 6. run tests using `pytest -q`
 7. confirm expected artifacts exist under:
