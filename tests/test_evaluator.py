@@ -150,3 +150,99 @@ def test_integration_fixed_threshold_run_writes_outputs(tmp_path, monkeypatch):
     assert summary["threshold_information"]["threshold"] == 0.9
     assert "confusion_matrices" in summary
     assert set(summary["confusion_matrices"].keys()) == {"val", "test"}
+
+
+def test_cli_single_pair_inference_prints_required_fields(tmp_path, monkeypatch, capsys):
+    left = tmp_path / "left.png"
+    right = tmp_path / "right.png"
+    Image.fromarray(np.full((8, 8), 220, dtype=np.uint8), mode="L").save(left)
+    Image.fromarray(np.full((8, 8), 200, dtype=np.uint8), mode="L").save(right)
+
+    config = {
+        "run_name": "inference_single",
+        "fixed_threshold": 0.9,
+        "image_mode": "L",
+        "resize": [8, 8],
+    }
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config))
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "evaluator.py",
+            "--config",
+            str(config_path),
+            "--left-image",
+            str(left),
+            "--right-image",
+            str(right),
+            "--pair-id",
+            "demo_pair",
+            "--embedding-backend",
+            "raw_pixels",
+        ],
+    )
+
+    evaluator.main()
+    out = capsys.readouterr().out
+
+    assert "pair_id=demo_pair" in out
+    assert f"left_path={left}" in out
+    assert f"right_path={right}" in out
+    assert "score=" in out
+    assert "threshold=0.900000" in out
+    assert "decision=" in out
+    assert "confidence=" in out
+    assert "latency_ms=" in out
+
+
+def test_cli_batch_inference_jsonl_prints_each_pair(tmp_path, monkeypatch, capsys):
+    left_a = tmp_path / "left_a.png"
+    right_a = tmp_path / "right_a.png"
+    left_b = tmp_path / "left_b.png"
+    right_b = tmp_path / "right_b.png"
+    Image.fromarray(np.full((8, 8), 240, dtype=np.uint8), mode="L").save(left_a)
+    Image.fromarray(np.full((8, 8), 230, dtype=np.uint8), mode="L").save(right_a)
+    Image.fromarray(np.full((8, 8), 40, dtype=np.uint8), mode="L").save(left_b)
+    Image.fromarray(np.full((8, 8), 20, dtype=np.uint8), mode="L").save(right_b)
+
+    pairs_file = tmp_path / "pairs.jsonl"
+    with pairs_file.open("w") as file:
+        file.write(json.dumps({"pair_id": "p1", "left_path": str(left_a), "right_path": str(right_a)}) + "\n")
+        file.write(json.dumps({"pair_id": "p2", "left_path": str(left_b), "right_path": str(right_b)}) + "\n")
+
+    config = {
+        "run_name": "inference_batch",
+        "fixed_threshold": 0.8,
+        "image_mode": "L",
+        "resize": [8, 8],
+    }
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config))
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "evaluator.py",
+            "--config",
+            str(config_path),
+            "--pairs-file",
+            str(pairs_file),
+            "--embedding-backend",
+            "raw_pixels",
+        ],
+    )
+
+    evaluator.main()
+    out = capsys.readouterr().out
+
+    assert "pair_id=p1" in out
+    assert "pair_id=p2" in out
+    assert "threshold=0.800000" in out
+    assert out.count("score=") == 2
+    assert out.count("decision=") == 2
+    assert out.count("confidence=") == 2
+    assert out.count("latency_ms=") == 2
