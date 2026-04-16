@@ -1,0 +1,22 @@
+{
+  "run_name": "arcface_best",
+  "description": "ArcFace embedding run using best threshold selected on validation.",
+  "pairs_dir": "outputs/pairs",
+  "split_for_threshold_selection": "val",
+  "split_for_final_reporting": "test",
+  "selection_strategy": "fixed_threshold",
+  "fixed_threshold": 0.2658909489140911,
+  "short_note_on_what_changed": "ArcFace fixed-threshold run using best validation threshold from arcface_sweep.",
+  "embedding_backend": "arcface",
+  "arcface_model_name": "buffalo_l",
+  "arcface_ctx_id": -1,
+  "arcface_det_size": [
+    640,
+    640
+  ],
+  "image_mode": "L",
+  "resize": [
+    32,
+    32
+  ]
+}

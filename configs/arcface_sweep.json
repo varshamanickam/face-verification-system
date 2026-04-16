@@ -1,0 +1,21 @@
+{
+	"run_name": "arcface_sweep",
+	"description": "Threshold sweep on validation using ArcFace embeddings.",
+	"pairs_dir": "outputs/pairs",
+	"split_for_threshold_selection": "val",
+	"split_for_final_reporting": "test",
+	"selection_strategy": "threshold_sweep",
+	"short_note_on_what_changed": "Switched embedding backend to ArcFace and selected threshold on validation by F1.",
+	"embedding_backend": "arcface",
+	"arcface_model_name": "buffalo_l",
+	"arcface_ctx_id": -1,
+	"arcface_det_size": [
+		640,
+		640
+	],
+	"image_mode": "L",
+	"resize": [
+		32,
+		32
+	]
+}
