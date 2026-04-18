@@ -2,7 +2,9 @@ import numpy as np
 
 
 def confidence_from_margin(scores: np.ndarray, threshold: float) -> np.ndarray:
-	# Scores are cosine similarities in [-1, 1], so dividing by 2 maps max margin to 1.
+	# Cnofidence is based on the absolute margin between the similarity score and the operating threshold.
+	#since cosine similarity is in [-1,2], the margin is normalized by dividing by 2 to map values into [0, 1]
+	#Largeer margins indicate predictions farther from the decision boundary meaning higher confidence
 	margins = np.abs(scores - threshold)
 	return np.clip(margins / 2.0, 0.0, 1.0)
 
