@@ -356,9 +356,18 @@ python scripts/benchmark_similarity.py
 
 ### 6. Run tests
 
+Run all tests:
+
 ```bash
 pytest -q
 ```
+The test suite covers:
+- Similarity metric correctness
+- validation checks
+- thresholding behavior
+- evaluator output structure
+- CLI single pair and batch inference output
+- 1 small integration run
 
 If you want to run the three Milestone 2 reliability pieces separately:
 
