@@ -229,6 +229,37 @@ Interpretation:
 
 This is just a simple deterministic heuristic and not a calibrated probability.
 
+### Docker
+
+Build the Docker image from the repository root:
+
+```bash
+docker build -t face-verifier-m3 .
+```
+
+Run single pair ArcFace inference inside Docker:
+
+```bash
+docker run --rm \
+  -v "$(pwd)":/app \
+  face-verifier-m3 \
+  python -m scripts.evaluator \
+    --config configs/arcface_best.json \
+    --embedding-backend arcface \
+    --left-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0001.jpg \
+    --right-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0002.jpg \
+    --pair-id demo_pair_1 \
+    --threshold 0.2658909489140911
+```
+
+Notes:
+
+- The repository is mounted into /app using `-v "$(pwd)":/app`
+- This allows the container to access local files including the dataset `(data/lfw)`
+- The first ArcFace run inside Docker may download the InsightFace model and take longer
+- The CLI output includes score, threshold, decision, confidence, and latency
+- Docker uses a mounted volume for dataset access instead of copying data into the image
+
 ### 4. Run the historical baseline configs
 
 These configs point to `outputs/pairs` and are kept for baseline comparison:
