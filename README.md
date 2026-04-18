@@ -213,22 +213,6 @@ Each pair prints:
 Note:
 - If no face is detected in an image, a zero embedding is used as a fallback.
 
-### Confidence Definition
-
-The CLI reports a confidence value in the range [0, 1].
-Confidence is based on how far the similarity score is from the decision threshold. 
-
-- margin = |score - threshold|
-- confidence = margin / 2 clipped to [0, 1]
-
-Since cosine similarity lies in [-1, 1], dividing by 2 keeps the values in a stable range.
-
-Interpretation:
-- larger margin -> farther from the decision boundary -> higher confidence
-- smaller margin -> closer to boundary -> lower confidence
-
-This is just a simple deterministic heuristic and not a calibrated probability.
-
 ### Docker
 
 Build the Docker image from the repository root:
@@ -260,6 +244,8 @@ Notes:
 - The CLI output includes score, threshold, decision, confidence, and latency
 - Docker uses a mounted volume for dataset access instead of copying data into the image
 
+---
+
 ### Load Test
 
 Run a small local load test on a deterministic set of face pairs:
@@ -286,6 +272,65 @@ Notes:
 
 - The request set is deterministic and is reused across runs
 - Some requests may fail if face detection doesn't succeed on a given image
+
+### System Behavior and Analysis
+
+#### Inference Behavior
+
+At inference time, the system processes one pair of images at a time. For each pair:
+
+- ArcFace embeddings are generated for both images  
+- cosine similarity is computed between the embeddings  
+- the score is compared to a threshold to produce a binary decision  
+- confidence and latency are reported for each prediction  
+
+This replaces the raw pixel pipeline from Milestone 2 with a learned approach that's based on embedding
+
+---
+
+#### Confidence Interpretation
+
+Confidence is based on how far the similarity score is from the threshold:
+
+- margin = |score - threshold|  
+- confidence = margin / 2  
+
+Since cosine similarity lies in [-1, 1], this keeps values in [0, 1].
+
+Interpretation:
+
+- higher confidence → prediction is farther from the decision boundary  
+- lower confidence → prediction is closer to the boundary  
+
+This is just a simple deterministic heuristic and not a calibrated probability.
+
+---
+
+#### Load Testing Observations
+
+A small local load test was run using a deterministic set of face pairs with multiple worker threads.
+
+Results:
+
+- throughput around 1–1.3 requests per second  
+- mean latency around 2 seconds  
+- median latency around 1.5 seconds  
+- p95 latency around 4 seconds  
+
+Some requests failed during testing mostly due to face detection issues on certain images. These failures were tracked and included in the results.
+
+---
+
+#### Limitations
+
+A few limitations were observed:
+
+- face detection is not guaranteed to succeed for all images  
+- inference latency is relatively high due to CPU only execution  
+- confidence scores are heuristic and not probabilistically calibrated  
+- performance depends on image quality and face detectability  
+
+Despite this, the system provides a complete and reproducible inference pipeline.
 
 ### 4. Run the historical baseline configs
 
