@@ -1,39 +1,42 @@
-# Face Verification System — Milestone 2
+# Face Verification System — Milestone 3
 
-This repository evaluates a simple face-verification pipeline on the Labeled Faces in the Wild (LFW) dataset. The Milestone 2 system uses a non-learnable image embedding:
+This repository implements a face verification system on the Labeled Faces in the Wild (LFW) dataset.
 
-- convert image to grayscale
-- resize to `32x32`
-- flatten
-- L2 normalize
-- compare left/right images with cosine similarity
+In Milestone 3, we extend the earlier evaluation pipeline into a more complete inference system using embedding based representations instead of just raw pixel features.
 
-The milestone focuses on:
+The system now supports:
 
-- deterministic pair generation
-- tracked evaluation runs
-- validation checks for configs and pair files
-- threshold sweep on validation
-- one data-centric iteration
-- error analysis and reporting
+- ArcFace based face embeddings
+- deterministic evaluation using pre generated pairs
+- threshold based verification decisions
+- CLI based inference for individual pairs or batch inputs
+- confidence scoring and latency measurement for each prediction
 
-## Milestone 2 Summary
+Earlier milestones focused on building a reproducible pipeline and evaluating it carefully. In this milestone, the focus is more toward making the system usable and easier to run for inference.
 
-### Baseline
+## Milestone 3 Summary
 
-The baseline uses the original pair policy reproduced in `outputs/pairs` and evaluates a fixed-threshold and validation-sweep version of the same raw-pixel cosine verifier.
+Milestone 3 builds on the Milestone 2 pipeline and replaces the raw pixel representation with an embedding based approach.
 
+Main changes in this milestone:
 
-### Data-Centric Improvement
+- switched to ArcFace embeddings for face representation
+- reselected the decision threshold based on the new score distribution
+- added a CLI inference mode for running predictions on individual pairs
+- added confidence scoring based on distance from the decision boundary
+- added latency measurement for each inference call
 
-The data-centric change creates a second pair-set version in `outputs/pairs_v2`.
+The deterministic pair generation and evaluation setup from previous milestones are reused so results remain reproducible.
 
-Implemented change:
+## Representation Overview
 
-- keep training pair construction unchanged
-- remove positive self-pairs from validation and test
+The system now supports two types of representations:
 
-This makes the evaluation set less artificially easy and gives a clearer picture of how brittle the raw-pixel baseline is.
+Baseline (Milestone 2):
+- grayscale → resize → flatten → normalize → cosine similarity  
+
+Milestone 3:
+- ArcFace embeddings → cosine similarity → threshold decision  
 
 
 ## Repository Structure
@@ -66,6 +69,27 @@ face-verification-system/
 │   └── runs/
 └── README.md
 ```
+
+
+## Milestone 2 Summary
+
+### Baseline
+
+The baseline uses the original pair policy reproduced in `outputs/pairs` and evaluates a fixed-threshold and validation-sweep version of the same raw-pixel cosine verifier.
+
+
+### Data-Centric Improvement
+
+The data-centric change creates a second pair-set version in `outputs/pairs_v2`.
+
+Implemented change:
+
+- keep training pair construction unchanged
+- remove positive self-pairs from validation and test
+
+This makes the evaluation set less artificially easy and gives a clearer picture of how brittle the raw-pixel baseline is.
+
+
 
 ## Environment Setup
 
@@ -154,7 +178,7 @@ Main evaluation outputs are written to `outputs/runs/<run_name>/`:
 
 ### 3.1 Run inference mode (CLI)
 
-Use inference mode when you want per-pair decision output directly in terminal.
+Use inference mode when you want to run pair-level predictions directly from the terminal.
 
 Single pair inference:
 
@@ -185,6 +209,25 @@ Each pair prints:
 - binary decision
 - calibrated confidence
 - latency for that inference
+
+Note:
+- If no face is detected in an image, a zero embedding is used as a fallback.
+
+### Confidence Definition
+
+The CLI reports a confidence value in the range [0, 1].
+Confidence is based on how far the similarity score is from the decision threshold. 
+
+- margin = |score - threshold|
+- confidence = margin / 2 clipped to [0, 1]
+
+Since cosine similarity lies in [-1, 1], dividing by 2 keeps the values in a stable range.
+
+Interpretation:
+- larger margin -> farther from the decision boundary -> higher confidence
+- smaller margin -> closer to boundary -> lower confidence
+
+This is just a simple deterministic heuristic and not a calibrated probability.
 
 ### 4. Run the historical baseline configs
 
