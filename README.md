@@ -260,6 +260,33 @@ Notes:
 - The CLI output includes score, threshold, decision, confidence, and latency
 - Docker uses a mounted volume for dataset access instead of copying data into the image
 
+### Load Test
+
+Run a small local load test on a deterministic set of face pairs:
+
+```bash
+python -m scripts.load_test \
+  --config configs/arcface_best.json \
+  --embedding-backend arcface \
+  --threshold 0.2658909489140911 \
+  --workers 4 \
+  --repeats 5
+```
+
+This writes a summary file to `outputs/load_test/load_test_summary.json`
+
+The load test reports:
+- total requests
+- successful and failed requests
+- total wall clock time
+- throughput in requests per second
+- latency statistics including mean, median, and p95
+
+Notes:
+
+- The request set is deterministic and is reused across runs
+- Some requests may fail if face detection doesn't succeed on a given image
+
 ### 4. Run the historical baseline configs
 
 These configs point to `outputs/pairs` and are kept for baseline comparison:
