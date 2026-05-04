@@ -11,6 +11,7 @@ __pycache__/
 outputs/bench/
 outputs/pairs/
 outputs/pairs_v2/
+ouputs/profiling/
 *.npy
 *.tfrecord
 data/
