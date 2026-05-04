@@ -1,8 +1,8 @@
-# Face Verification System — Milestone 3
+# Face Verification System — Milestone 4
 
 This repository implements a face verification system on the Labeled Faces in the Wild (LFW) dataset.
 
-In Milestone 3, we extend the earlier evaluation pipeline into a more complete inference system using embedding based representations instead of just raw pixel features.
+In Milestone 4, we take the existing inference pipeline and finalize it into a complete, reproducible system. The focus here is not on changing the model, but on documenting the system clearly, measuring how it behaves in practice, and making sure everything can be reproduced from a clean clone.
 
 The system now supports:
 
@@ -11,8 +11,22 @@ The system now supports:
 - threshold based verification decisions
 - CLI based inference for individual pairs or batch inputs
 - confidence scoring and latency measurement for each prediction
+- system level documentation and profiling
 
-Earlier milestones focused on building a reproducible pipeline and evaluating it carefully. In this milestone, the focus is more toward making the system usable and easier to run for inference.
+Earlier milestones focused on building the pipeline and evaluating it carefully. This milestone focuses completing the system, making it interpretable and consistent across all artifacts.
+
+## Milestone 4 Summary
+
+Milestone 4 builds on the Milestone 3 inference system and focuses on finalizing it.
+
+Main additions in this milestone:
+
+- added a System Card describing intended use, limitations, and failure modes
+- added stage wise latency profiling for preprocessing, embedding, and scoring
+- established a CPU baseline for runtime behavior
+- added a reproducibility checklist for clean-clone execution
+
+The underlying ArcFace based pipeline and threshold selection remain unchanged. This milestoen emphasises aligning documentation, profiling, and reproducibility with the final system version.
 
 ## Milestone 3 Summary
 
@@ -44,8 +58,11 @@ Milestone 3:
 ```text
 face-verification-system/
 ├── configs/
-├── reports/
+reports/
 │   ├── evaluation_report.md
+│   ├── system_card.md
+│   ├── profiling_report.md
+│   ├── reproducibility_checklist.md
 ├── scripts/
 │   ├── benchmark_similarity.py
 │   ├── evaluator.py
@@ -57,6 +74,7 @@ face-verification-system/
 |   ├── confidence_computation.py
 │   ├── generate_pairs.py
 │   ├── validate_pipeline.py
+│   ├── profile_system.py
 │   └── falseneg_falsepos.py  # script to pull out some examples for false neg and false positives for error analysis
 ├── src/
 │   ├── similarity_metrics.py
@@ -273,6 +291,30 @@ Notes:
 - The request set is deterministic and is reused across runs
 - Some requests may fail if face detection doesn't succeed on a given image
 
+---
+
+### Profiling (Milestone 4)
+
+Run CPU profiling on the final ArcFace system:
+
+```bash
+python -m scripts.profile_system --limit 25
+```
+
+This generates `outputs/profiling/profile_cpu.json`
+
+The profiling measures:
+- preprocessing latency
+- embedding latency
+- scoring latency
+- end to end latency
+
+Notes:
+
+- Embedding latency dominates runtime because it includes image loading, face detection, and ArcFace inference
+- Scoring is negligible compared to embedding
+- Preprocessing appears small because detection is handled inside the embeding stage
+
 ### System Behavior and Analysis
 
 #### Inference Behavior
@@ -463,6 +505,20 @@ Tracked runs:
   - purpose:
     - fixed-threshold rerun using ArcFace embeddings on the original pair set with the selected
 
+## Final Milestone 4 Artifacts
+
+- System Card:
+  - `reports/system_card.md`
+
+- Profiling Report:
+  - `reports/profiling_report.md`
+
+- Reproducibility Checklist:
+  - `reports/reproducibility_checklist.md`
+
+- Profiling Output:
+  - `outputs/profiling/profile_cpu.json`
+
 
 ### Selected Thresholds
 
@@ -513,35 +569,49 @@ The resulting main artifacts will be:
   - breaking ties with higher accuracy
 - the selected threshold is written into the summary JSON under `threshold_information`
 
-## Clean-Clone Reproducibility Note
-
-Before tagging the milestone, the intended clean-clone check is:
+## Clean-Clone Reproducibility (Milestone 4)
 
 1. start from a fresh clone
+
 2. follow the setup commands above exactly
-3. generate both pair versions
+
+3. generate the baseline pair set
     ```bash
     python scripts/generate_pairs.py --pair-version baseline
-    python scripts/generate_pairs.py --pair-version v2
-   ```
-4. Validate inputs by running:
-    ```bash   
-    python scripts/validate_pipeline.py --config configs/after_change_sweep.json
-    python scripts/validate_pipeline.py --config configs/baseline.json
-   ```
-5. run evaluation configs 
-    ```bash
-    python -m scripts.evaluator --config configs/after_change_sweep.json
-    python -m scripts.evaluator --config configs/after_change_best.json
-    python -m scripts.evaluator --config configs/baseline_sweep.json
-    python -m scripts.evaluator --config configs/baseline_best.json
-    python -m scripts.evaluator --config configs/baseline.json
     ```
-6. run tests using `pytest -q`
-7. confirm expected artifacts exist under:
+
+4. validate pipeline inputs
+    ```bash
+    python scripts/validate_pipeline.py --config configs/arcface_sweep.json
+    ```
+
+5. run evaluation configs
+    ```bash
+    python -m scripts.evaluator --config configs/arcface_sweep.json
+    python -m scripts.evaluator --config configs/arcface_best.json
+    ```
+
+6. run profiling on the final system
+    ```bash
+    python -m scripts.profile_system --limit 25
+    ```
+
+7. run tests using `pytest -q`
+
+8. confirm expected artifacts exist under:
     ```bash
     outputs/pairs/
-    outputs/pairs_v2/
     outputs/runs/
+    outputs/profiling/
+    reports/system_card.md
+    reports/profiling_report.md
+    reports/reproducibility_checklist.md
     ```
-Both `outputs/pairs` and `outputs/pairs_v2` are reproducible from the current generator by choosing the appropriate `--pair-version`.
+
+This confirms:
+
+- deterministic pair generation
+- correct threshold selection and evaluation behavior
+- final ArcFace system outputs
+- CPU profiling results
+- alignment between System Card, profiling, and repository artifacts
