@@ -315,6 +315,11 @@ Notes:
 - Scoring is negligible compared to embedding
 - Preprocessing appears small because detection is handled inside the embeding stage
 
+For detailed latency breakdown and batch-size sensitivity analysis, see:
+
+- `reports/profiling_report.md`
+
+
 ### System Behavior and Analysis
 
 #### Inference Behavior
