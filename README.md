@@ -13,7 +13,7 @@ The system now supports:
 - confidence scoring and latency measurement for each prediction
 - system level documentation and profiling
 
-Earlier milestones focused on building the pipeline and evaluating it carefully. This milestone focuses completing the system, making it interpretable and consistent across all artifacts.
+Earlier milestones focused on building the pipeline and evaluating it carefully. This milestone focuses completing the system and making it interpretable and consistent across all artifacts.
 
 ## Milestone 4 Summary
 
@@ -26,7 +26,7 @@ Main additions in this milestone:
 - established a CPU baseline for runtime behavior
 - added a reproducibility checklist for clean-clone execution
 
-The underlying ArcFace based pipeline and threshold selection remain unchanged. This milestoen emphasises aligning documentation, profiling, and reproducibility with the final system version.
+The underlying ArcFace based pipeline and threshold selection remain unchanged. This milestone emphasises aligning documentation, profiling, and reproducibility with the final system version.
 
 ## Milestone 3 Summary
 
@@ -58,7 +58,7 @@ Milestone 3:
 ```text
 face-verification-system/
 ├── configs/
-reports/
+├── reports/
 │   ├── evaluation_report.md
 │   ├── system_card.md
 │   ├── profiling_report.md
@@ -300,6 +300,7 @@ Run CPU profiling on the final ArcFace system:
 ```bash
 python -m scripts.profile_system --limit 25
 ```
+This command runs the final ArcFace system using the same configuration as the reported evaluation results.
 
 This generates `outputs/profiling/profile_cpu.json`
 
@@ -313,7 +314,7 @@ Notes:
 
 - Embedding latency dominates runtime because it includes image loading, face detection, and ArcFace inference
 - Scoring is negligible compared to embedding
-- Preprocessing appears small because detection is handled inside the embeding stage
+- Preprocessing appears small because detection is handled inside the embedding stage
 
 For detailed latency breakdown and batch-size sensitivity analysis, see:
 
