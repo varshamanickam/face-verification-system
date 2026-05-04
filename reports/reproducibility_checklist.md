@@ -8,6 +8,7 @@ The following steps reproduce the final ArcFace-based face verification system f
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -e .
 ```
 
 ## 2. Generate deterministic pair set
