@@ -44,6 +44,8 @@ python -m scripts.evaluator --config configs/arcface_best.json
 
 ## 5. Run CLI inference (for sanity check)
 
+Local CLI:
+
 ```bash
 python -m scripts.evaluator \
   --config configs/arcface_best.json \
@@ -52,6 +54,21 @@ python -m scripts.evaluator \
   --right-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0002.jpg \
   --pair-id demo_pair \
   --threshold 0.2658909489140911
+```
+
+Dockerized CLI:
+
+```bash
+docker run --rm \
+  -v "$(pwd)":/app \
+  face-verifier-m3 \
+  python -m scripts.evaluator \
+    --config configs/arcface_best.json \
+    --embedding-backend arcface \
+    --left-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0001.jpg \
+    --right-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0002.jpg \
+    --pair-id demo_pair \
+    --threshold 0.2658909489140911
 ```
 
 ## 6. Run profiling (CPU baseline)
