@@ -10,6 +10,8 @@ To understand how runtime changes with workload size, profiling was repeated wit
 
 ### Observations
 
-The single-pair run had much higher latency because it includes more one-time setup and warmup overhead relative to the amount of work being measured. As the number of profiled pairs increased, the mean end-to-end latency per pair became more stable.
+The single pair run has much higher latency because it includes the initial setup and model loading overhead, but that cost is only being used for one pair. As a result, the average time per pair is much higher in that case.
 
-The 8-pair and 32-pair runs show that the system is still CPU-bound, with most runtime coming from the embedding stage. This makes sense because embedding generation includes image loading, face detection, face selection, and ArcFace inference. Scoring remains negligible across all batch sizes.
+As the number of pairs increases, the average latency per pair becomes more stable. With 8 and 32 pairs, the system has already done most of the setup work, so each additional pair takes less time on average.
+
+Even with this change, the system is still clearly CPU-bound. Most of the runtime comes from the embedding stage, which includes image loading, face detection, face selection, and the ArcFace forward pass. Scoring remains negligible across all batch sizes.
