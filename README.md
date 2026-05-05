@@ -614,6 +614,10 @@ The resulting main artifacts will be:
     reports/reproducibility_checklist.md
     ```
 
+For a strict step-by-step verification, see:
+
+- `reports/reproducibility_checklist.md`
+
 This confirms:
 
 - deterministic pair generation

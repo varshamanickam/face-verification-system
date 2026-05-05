@@ -40,7 +40,7 @@ python -m scripts.evaluator --config configs/arcface_best.json
 ### Expected outputs:
 
 - `outputs/runs/arcface_sweep/arcface_sweep_summary.json`
-- `outputs/runs/arcface_best/acrface_best_summary.json`
+- `outputs/runs/arcface_best/arcface_best_summary.json`
 
 ## 5. Run CLI inference (for sanity check)
 
@@ -54,6 +54,11 @@ python -m scripts.evaluator \
   --right-image data/lfw/Aaron_Peirsol/Aaron_Peirsol_0002.jpg \
   --pair-id demo_pair \
   --threshold 0.2658909489140911
+```
+
+Build docker image:
+```bash
+docker build -t face-verifier-m3 .
 ```
 
 Dockerized CLI:

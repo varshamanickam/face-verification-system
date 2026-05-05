@@ -192,12 +192,12 @@ For that reason, runtime values should be interpreted together with the Mileston
 
 ## Reproducibility Pointer
 
-The final reproducible release of this project is tagged as `v`.
+The final reproducible release of this project is tagged as `v1.0-final`.
 
 Main locations:
 
-- Project overview and commands: [README.md](/Users/shile/github/face-verification-system/README.md)
-- Final system card: [reports/system_card.md](/Users/shile/github/face-verification-system/reports/system_card.md)
+- Project overview and commands: [README.md](../README.md)
+- Final system card: [reports/system_card.md](system_card.md)
 
 Core commands for the final ArcFace system are:
 
